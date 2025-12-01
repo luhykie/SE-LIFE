@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="mb-3 text-danger">Remove Multiple Patients</h2>
+
+<form id="removeForm" method="POST">
+  <div class="mb-3">
+    <p>Select patients you want to remove:</p>
+    <div class="list-group">
+      {% for patient in patients %}
+      <label class="list-group-item">
+        <input type="checkbox" name="ids" value="{{ patient.id }}" class="form-check-input me-2 patient-checkbox">
+        {{ patient.first_name }} {{ patient.last_name }}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-danger">Remove Selected</button>
+  <a href="{{ url_for('patients') }}" class="btn btn-secondary">Cancel</a>
+</form>
+
+<script>
+const form = document.getElementById('removeForm');
+
+form.addEventListener('submit', function(e) {
+    const checkedBoxes = document.querySelectorAll('.patient-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+        alert('Please select at least one patient to remove.');
+        e.preventDefault();
+        return;
+    }
+
+    // Build patient names list (only names, no IDs)
+    let names = [];
+    checkedBoxes.forEach(cb => {
+        const label = cb.parentElement.textContent.trim();
+        names.push(label);
+    });
+
+    const confirmMsg = `Are you sure you want to remove the following patients?\n\n${names.join('\n')}`;
+    if (!confirm(confirmMsg)) {
+        e.preventDefault();
+    }
+});
+</script>
+
+{% endblock %}

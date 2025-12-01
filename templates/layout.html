@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Barangay Health Records</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{{ url_for('home') }}">Barangay Health Records</a>
+    <div>
+      {% if request.path == '/patients' %}
+        <a href="{{ url_for('home') }}" class="btn btn-light">Home Page</a>
+      {% else %}
+        <a href="{{ url_for('patients') }}" class="btn btn-light">View Patients</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+<div class="container mt-4">
+    {% block content %}{% endblock %}
+</div>
+</body>
+</html>

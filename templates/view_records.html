@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card shadow-sm p-4">
+  <h2 class="mb-3">Patient Details</h2>
+  <ul class="list-group">
+    <li class="list-group-item"><strong>Name:</strong> {{ patient.first_name }} {{ patient.last_name }}</li>
+    <li class="list-group-item"><strong>Age:</strong> {{ patient.age }}</li>
+    <li class="list-group-item"><strong>Gender:</strong> {{ patient.gender }}</li>
+    <li class="list-group-item"><strong>Contact:</strong> {{ patient.contact }}</li>
+    <li class="list-group-item"><strong>Date Added:</strong> {{ patient.date_added }}</li>
+  </ul>
+  <div class="mt-3">
+    <a href="{{ url_for('patients') }}" class="btn btn-secondary">Back</a>
+  </div>
+</div>
+{% endblock %}
