@@ -58,7 +58,7 @@ To develop an efficient and reliable **health record management system** for Bar
 | :--- | :--- | :--- | :--- |
 | **Lyka Mae Entera** | **Project Leader & Backend Developer** | VS Code, Python/Flask | Server-side logic, API integration, code structure, and backend functionality. |
 | **Kea Abaquita** | **UI/UX Designer & Frontend** | Figma, HTML/CSS | User interface design, prototyping, wireframes, and frontend implementation. |
-| **Pantine Hernando** | **System Analyst** | draw.io, UML Tools | System architecture, database design (ERD), flowcharts, and use-case modeling. |
+| **Pantine Hernando** | **System Analyst** | draw.io, UML Tools | System architecture, database design (ERD), flowcharts, and use-case modeling. |   
 
 ---
 
