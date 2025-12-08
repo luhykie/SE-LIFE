@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="fw-bold mb-4">✏️ Edit Health Records</h2>
+
+<div class="card shadow-lg p-4">
+    <form method="POST" action="{{ url_for('edit_health_records') }}">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Blood Type</label>
+                <select name="blood_type" class="form-select" required>
+                    <option value="">-- Select Blood Type --</option>
+                    <option value="O+" {% if health_record.blood_type == 'O+' %}selected{% endif %}>O+</option>
+                    <option value="O-" {% if health_record.blood_type == 'O-' %}selected{% endif %}>O-</option>
+                    <option value="A+" {% if health_record.blood_type == 'A+' %}selected{% endif %}>A+</option>
+                    <option value="A-" {% if health_record.blood_type == 'A-' %}selected{% endif %}>A-</option>
+                    <option value="B+" {% if health_record.blood_type == 'B+' %}selected{% endif %}>B+</option>
+                    <option value="B-" {% if health_record.blood_type == 'B-' %}selected{% endif %}>B-</option>
+                    <option value="AB+" {% if health_record.blood_type == 'AB+' %}selected{% endif %}>AB+</option>
+                    <option value="AB-" {% if health_record.blood_type == 'AB-' %}selected{% endif %}>AB-</option>
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select" required>
+                    <option value="Active" {% if health_record.status == 'Active' %}selected{% endif %}>Active</option>
+                    <option value="Inactive" {% if health_record.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">⚠️ Allergies</label>
+            <textarea name="allergies" class="form-control" rows="3" placeholder="List any allergies (e.g., Penicillin, Peanuts, Shellfish)">{{ health_record.allergies or '' }}</textarea>
+            <small class="text-muted">Separate multiple allergies with commas</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">🏥 Chronic Conditions</label>
+            <textarea name="chronic_conditions" class="form-control" rows="3" placeholder="List any chronic conditions (e.g., Diabetes, Hypertension, Asthma)">{{ health_record.chronic_conditions or '' }}</textarea>
+            <small class="text-muted">Separate multiple conditions with commas or 'None' if applicable</small>
+        </div>
+
+        <div class="alert alert-info mt-4">
+            <strong>ℹ️ Note:</strong> This information is important for your healthcare providers. Please keep it accurate and up-to-date.
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">
+                💾 Save Changes
+            </button>
+            <a href="{{ url_for('view_health_records') }}" class="btn btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">Record Information</h5>
+                <p class="text-muted mb-0">
+                    <strong>Created:</strong> {{ health_record.created_at[:10] if health_record.created_at else 'N/A' }} | 
+                    <strong>Last Updated:</strong> {{ health_record.updated_at[:10] if health_record.updated_at else 'N/A' }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

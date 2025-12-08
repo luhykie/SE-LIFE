@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📋 My Health Records</h2>
+    <a href="{{ url_for('edit_health_records') }}" class="btn btn-warning">
+        ✏️ Edit Health Records
+    </a>
+</div>
+
+<div class="card shadow-lg p-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card mb-3 border-left-primary">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">Blood Type</h5>
+                    <p class="card-text h4 text-danger fw-bold">
+                        {{ health_record.blood_type if health_record.blood_type else 'Not Set' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-3 border-left-info">
+                <div class="card-body">
+                    <h5 class="card-title text-info">Status</h5>
+                    <p class="card-text">
+                        <span class="badge bg-{% if health_record.status == 'Active' %}success{% else %}warning{% endif %} p-2">
+                            {{ health_record.status if health_record.status else 'Unknown' }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <h5 class="text-warning mb-3">⚠️ Allergies</h5>
+        <div class="alert alert-light border border-warning">
+            <p class="mb-0">
+                {{ health_record.allergies if health_record.allergies else 'No allergies recorded' }}
+            </p>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <h5 class="text-danger mb-3">🏥 Chronic Conditions</h5>
+        <div class="alert alert-light border border-danger">
+            <p class="mb-0">
+                {{ health_record.chronic_conditions if health_record.chronic_conditions else 'No chronic conditions recorded' }}
+            </p>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="row text-muted small">
+        <div class="col-md-6">
+            <p><strong>Created:</strong> {{ health_record.created_at[:10] if health_record.created_at else 'N/A' }}</p>
+        </div>
+        <div class="col-md-6">
+            <p><strong>Last Updated:</strong> {{ health_record.updated_at[:10] if health_record.updated_at else 'N/A' }}</p>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{{ url_for('edit_health_records') }}" class="btn btn-warning">
+            ✏️ Edit Information
+        </a>
+        <a href="{{ url_for('patient_profile') }}" class="btn btn-secondary">
+            Back to Profile
+        </a>
+    </div>
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 4px solid #007bff !important;
+}
+.border-left-info {
+    border-left: 4px solid #17a2b8 !important;
+}
+</style>
+{% endblock %}

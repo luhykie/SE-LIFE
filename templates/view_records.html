@@ -1,16 +1,64 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="card shadow-sm p-4">
-  <h2 class="mb-3">Patient Details</h2>
-  <ul class="list-group">
-    <li class="list-group-item"><strong>Name:</strong> {{ patient.first_name }} {{ patient.last_name }}</li>
-    <li class="list-group-item"><strong>Age:</strong> {{ patient.age }}</li>
-    <li class="list-group-item"><strong>Gender:</strong> {{ patient.gender }}</li>
-    <li class="list-group-item"><strong>Contact:</strong> {{ patient.contact }}</li>
-    <li class="list-group-item"><strong>Date Added:</strong> {{ patient.date_added }}</li>
-  </ul>
+  <h2 class="mb-3">Patient Details (ID: {{ patient.id }})</h2>
+  
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item"><strong>Full Name:</strong> {{ patient.first_name }} {{ patient.middle_name or '' }} {{ patient.last_name }} {{ patient.suffix or '' }}</li>
+        <li class="list-group-item"><strong>Date of Birth:</strong> {{ patient.dob }}</li>
+        <li class="list-group-item"><strong>Age:</strong> <span class="badge bg-primary">{{ patient.age }} years</span></li>
+        <li class="list-group-item"><strong>Gender:</strong> {{ patient.gender }}</li>
+      </ul>
+    </div>
+    <div class="col-md-6">
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item"><strong>Contact:</strong> {{ patient.contact }}</li>
+        <li class="list-group-item"><strong>Address:</strong> {{ patient.address or 'Not specified' }}</li>
+        <li class="list-group-item"><strong>Date Added:</strong> {{ patient.created_at }}</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card border-info mb-4">
+    <div class="card-header bg-info text-white">Notes / Remarks</div>
+    <div class="card-body">
+      <p class="card-text">{{ patient.notes or 'No current remarks.' }}</p>
+    </div>
+  </div>
+
+  <div class="card border-primary mb-4">
+    <div class="card-header bg-primary text-white">Health Record Summary</div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4">
+          <p><strong>Blood Type:</strong> {{ patient.blood_type or 'Not set' }}</p>
+        </div>
+        <div class="col-md-4">
+          <p><strong>Status:</strong> <span class="badge bg-{% if patient.health_status == 'Active' %}success{% else %}secondary{% endif %}">{{ patient.health_status or 'Unknown' }}</span></p>
+        </div>
+        <div class="col-md-4">
+          <p><strong>Record Created:</strong> {{ patient.health_created_at[:10] if patient.health_created_at else 'N/A' }}</p>
+        </div>
+      </div>
+
+      <hr>
+      <div class="mb-3">
+        <h6 class="mb-1">Allergies</h6>
+        <p class="mb-0">{{ patient.allergies or 'No allergies recorded' }}</p>
+      </div>
+
+      <div>
+        <h6 class="mb-1">Chronic Conditions</h6>
+        <p class="mb-0">{{ patient.chronic_conditions or 'No chronic conditions recorded' }}</p>
+      </div>
+    </div>
+  </div>
+
   <div class="mt-3">
-    <a href="{{ url_for('patients') }}" class="btn btn-secondary">Back</a>
+    <a href="{{ url_for('edit_patient', id=patient.id) }}" class="btn btn-warning me-2">Edit Details</a>
+    <a href="{{ url_for('patients') }}" class="btn btn-secondary">Back to List</a>
   </div>
 </div>
 {% endblock %}
