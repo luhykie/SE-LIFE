@@ -1,10 +1,8 @@
 {% extends "layout.html" %}
 {% block content %}
-<h2 class="mb-3">Patients</h2>
+<h2 class="mb-3">Patients (Admin View)</h2>
 
-<!-- Filters -->
-<form method="get" class="row g-2 mb-4 align-items-end">
-  <!-- Gender -->
+<form id="filterForm" method="get" class="row g-2 mb-4 align-items-end">
   <div class="col-md-2">
     <label class="form-label">Gender</label>
     <select name="gender" class="form-select">
@@ -14,57 +12,59 @@
     </select>
   </div>
 
-  <!-- Age -->
   <div class="col-md-2">
     <label class="form-label">Age</label>
     <input type="number" name="age" value="{{ age_input }}" placeholder="Age" class="form-control" min="1">
   </div>
 
-  <!-- Patient ID -->
   <div class="col-md-2">
     <label class="form-label">Patient ID</label>
     <input type="number" name="patient_id" value="{{ id_input }}" placeholder="ID" class="form-control" min="1">
   </div>
 
-  <!-- Search -->
   <div class="col-md-4">
-    <label class="form-label">Search</label>
+    <label class="form-label">Search (Name/Contact)</label>
     <input type="text" name="search" value="{{ search }}" placeholder="Name or Contact" class="form-control">
   </div>
-
-  <!-- Date Range -->
+  
   <div class="col-md-2">
-    <label class="form-label">From</label>
+    <label class="form-label">Last Name Starts With</label>
+    <input type="text" name="last_name_start" value="{{ last_name_start }}" placeholder="A, B, C..." class="form-control">
+  </div>
+
+  <div class="col-md-3">
+    <label class="form-label">Date Added (From)</label>
     <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
   </div>
-  <div class="col-md-2">
-    <label class="form-label">To</label>
+  
+  <div class="col-md-3">
+    <label class="form-label">Date Added (To)</label>
     <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
   </div>
 
-  <!-- Sort -->
   <div class="col-md-2">
-    <label class="form-label">Sort By</label>
-    <select name="sort" class="form-select">
-      <option value="id" {% if sort_by == "id" %}selected{% endif %}>ID</option>
-      <option value="last_name" {% if sort_by == "last_name" %}selected{% endif %}>Last Name</option>
-      <option value="first_name" {% if sort_by == "first_name" %}selected{% endif %}>First Name</option>
-      <option value="age_asc" {% if sort_by == "age_asc" %}selected{% endif %}>Age ↑</option>
-      <option value="age_desc" {% if sort_by == "age_desc" %}selected{% endif %}>Age ↓</option>
-    </select>
-  </div>
-
-  <!-- Buttons -->
-  <div class="col-md-2 d-flex gap-2">
-    <button type="submit" class="btn btn-primary w-100">Apply</button>
-    <a href="{{ url_for('patients') }}" class="btn btn-secondary w-100">Reset</a>
-  </div>
-  <div class="col-md-2">
-    <a href="{{ url_for('add_patient') }}" class="btn btn-success w-100">Add Patient</a>
+    <button type="submit" class="btn btn-primary w-100">Filter</button>
   </div>
 </form>
 
-<!-- Table -->
+<div class="d-flex justify-content-between mb-3">
+  <div>
+    <a href="{{ url_for('add_patient') }}" class="btn btn-success me-2">Add New Patient</a>
+    <a href="{{ url_for('remove_multiple') }}" class="btn btn-danger">Remove Multiple</a>
+  </div>
+  
+  <div class="d-flex align-items-center gap-2">
+    <label class="form-label mb-0">Sort By:</label>
+    
+    <select id="sort_select" class="form-select w-auto" onchange="applySort(this.value)">
+        <option value="id" {% if sort_by == 'id' %}selected{% endif %}>ID</option>
+        <option value="last_name" {% if sort_by == 'last_name' %}selected{% endif %}>Last Name</option>
+        <option value="age_asc" {% if sort_by == 'age_asc' %}selected{% endif %}>Age (Asc)</option>
+        <option value="age_desc" {% if sort_by == 'age_desc' %}selected{% endif %}>Age (Desc)</option>
+    </select>
+  </div>
+</div>
+
 <div class="table-responsive">
 <table class="table table-striped table-hover align-middle">
   <thead class="table-dark">
@@ -87,8 +87,8 @@
       <td>{{ patient.id }}</td>
       <td>{{ patient.last_name }}</td>
       <td>{{ patient.first_name }}</td>
-      <td>{{ patient.middle_name }}</td>
-      <td>{{ patient.suffix }}</td>
+      <td>{{ patient.middle_name or '' }}</td>
+      <td>{{ patient.suffix or '' }}</td>
       <td>{{ patient.dob }}</td>
       <td>{{ patient.sex }}</td>
       <td>{{ patient.contact }}</td>
@@ -107,5 +107,30 @@
 </table>
 </div>
 
-<a href="{{ url_for('remove_multiple') }}" class="btn btn-danger">Remove Multiple</a>
+{% if not patients %}
+<div class="alert alert-warning mt-3" role="alert">No patients match the current filter criteria.</div>
+{% endif %}
+
+<script>
+    const filterForm = document.getElementById('filterForm');
+    
+    function applySort(sortValue) {
+        const params = new URLSearchParams(new FormData(filterForm));
+        
+        params.delete('sort');
+        params.append('sort', sortValue);
+
+        // Remove empty parameters to clean up the URL
+        params.forEach((value, key) => {
+            if (value === '' || value === 'All') {
+                params.delete(key);
+            }
+        });
+        
+        const baseUrl = "{{ url_for('patients') }}";
+        
+        window.location.href = baseUrl + '?' + params.toString();
+    }
+</script>
+
 {% endblock %}
