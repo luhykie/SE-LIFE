@@ -5,11 +5,11 @@
 <form id="removeForm" method="POST">
   <div class="mb-3">
     <p>Select patients you want to remove:</p>
-    <div class="list-group">
+    <div class="list-group" style="max-height: 400px; overflow-y: auto;">
       {% for patient in patients %}
       <label class="list-group-item">
         <input type="checkbox" name="ids" value="{{ patient.id }}" class="form-check-input me-2 patient-checkbox">
-        {{ patient.first_name }} {{ patient.last_name }}
+        <strong class="me-2">#{{ patient.id }}</strong> {{ patient.first_name }} {{ patient.last_name }}
       </label>
       {% endfor %}
     </div>
@@ -30,18 +30,17 @@ form.addEventListener('submit', function(e) {
         return;
     }
 
-    // Build patient names list (only names, no IDs)
     let names = [];
     checkedBoxes.forEach(cb => {
-        const label = cb.parentElement.textContent.trim();
+        const label = cb.parentElement.textContent.trim().replace(/^\s*#\d+\s*/, '');
         names.push(label);
     });
 
-    const confirmMsg = `Are you sure you want to remove the following patients?\n\n${names.join('\n')}`;
-    if (!confirm(confirmMsg)) {
+    const confirmation = `Are you sure you want to permanently delete the following ${checkedBoxes.length} patient(s)?\n\n- ${names.join('\n- ')}\n\nThis action cannot be undone.`;
+
+    if (!confirm(confirmation)) {
         e.preventDefault();
     }
 });
 </script>
-
 {% endblock %}
