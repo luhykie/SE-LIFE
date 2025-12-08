@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="mb-4">🛎️ Patient Requests</h2>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Request ID</th>
+                <th>Patient Name</th>
+                <th>Patient Contact</th>
+                <th>Request Type</th>
+                <th>Details</th>
+                <th>Status</th>
+                <th>Date Requested</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr>
+                <td>{{ req.id }}</td>
+                <td><a href="{{ url_for('view_patient', id=req.patient_id) }}" class="text-decoration-none">{{ req.last_name }}, {{ req.first_name }}</a></td>
+                <td>{{ req.contact }}</td>
+                <td>{{ req.request_type }}</td>
+                <td>{{ req.details }}</td>
+                <td>
+                    {% if req.status == 'Pending' %}
+                        <span class="badge bg-warning text-dark">{{ req.status }}</span>
+                    {% elif req.status == 'Completed' %}
+                        <span class="badge bg-success">{{ req.status }}</span>
+                    {% else %}
+                        <span class="badge bg-danger">{{ req.status }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ req.date_requested }}</td>
+                <td>
+                    {# Placeholder for future functionality to mark as complete #}
+                    <button class="btn btn-sm btn-outline-success" disabled>Complete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if not requests %}
+<div class="alert alert-info">There are no pending patient requests.</div>
+{% endif %}
+{% endblock %}
