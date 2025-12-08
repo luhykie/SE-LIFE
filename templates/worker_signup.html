@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col-lg-6">
+        <div class="card shadow-lg p-4 bg-light border-dark">
+            <h3 class="card-title text-center text-dark mb-4">Worker/Admin Registration</h3>
+            <p class="text-danger text-center"><small>Note: Admin accounts may require approval from a Super-Admin.</small></p>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}{% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('worker_signup') }}" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Employee ID (Barangay ID)</label>
+                    <input name="employee_id" class="form-control" placeholder="Employee ID" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Role</label>
+                    <select name="role" class="form-select" required>
+                        <option value="">Select Role</option>
+                        <option value="worker">Worker</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Full Name</label>
+                    <input name="full_name" class="form-control" placeholder="Full Name" required>
+                </div>
+                <div class="col-md-6"><label class="form-label">Username</label><input type="text" class="form-control" name="username" required></div>
+                <div class="col-md-6"><label class="form-label">Password</label><input type="password" class="form-control" name="password" required></div>
+
+                <div class="col-12 d-grid mt-4">
+                    <button type="submit" class="btn btn-dark">Register as Worker/Admin</button>
+                </div>
+                <p class="text-center">Already registered? <a href="{{ url_for('worker_signin') }}">Sign In</a></p>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
