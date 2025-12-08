@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>🛒 Community Health Marketplace</h2>
+        <p class="text-muted">Available items and health products from the Barangay Health Center.</p>
+    </div>
+    <div>
+        <a href="{{ url_for('view_cart') }}" class="btn btn-primary btn-lg">
+            🛒 My Cart {% if cart_count > 0 %}<span class="badge bg-danger">{{ cart_count }}</span>{% endif %}
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <a href="{{ url_for('medical_services') }}" class="btn btn-info btn-lg">
+            ⚕️ Request Medical Services (Vaccines, Checkups, etc.)
+        </a>
+    </div>
+</div>
+
+{% if items %}
+<div class="row">
+    {% for item in items %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">{{ item.name }}</h5>
+                <p class="card-text text-muted">{{ item.description or 'Health product' }}</p>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="h5 mb-0">₱ {{ '%.2f' | format(item.price) }}</span>
+                    <span class="badge bg-{% if item.stock > 10 %}success{% elif item.stock > 0 %}warning{% else %}danger{% endif %}">
+                        Stock: {{ item.stock }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-footer bg-white">
+                {% if item.stock > 0 %}
+                    <form action="{{ url_for('add_to_cart', item_id=item.id) }}" method="POST">
+                        <div class="input-group mb-2">
+                            <input type="number" name="quantity" class="form-control" value="1" min="1" max="{{ item.stock }}" required>
+                            <button type="submit" class="btn btn-success">Add to Cart</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <button class="btn btn-secondary w-100" disabled>Out of Stock</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">The marketplace is currently empty. Check back later!</div>
+{% endif %}
+
+<hr>
+<div class="mt-4">
+    <a href="{{ url_for('patient_profile') }}" class="btn btn-secondary">Back to Profile</a>
+</div>
+{% endblock %}
