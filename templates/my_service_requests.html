@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📋 My Service Requests</h2>
+    <a href="{{ url_for('medical_services') }}" class="btn btn-primary">
+        ⚕️ Request More Services
+    </a>
+</div>
+
+{% if requests %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Request ID</th>
+                <th>Service Name</th>
+                <th>Request Type</th>
+                <th>Notes</th>
+                <th>Status</th>
+                <th>Requested Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr>
+                <td><strong>#{{ req.id }}</strong></td>
+                <td>{{ req.service_name }}</td>
+                <td>
+                    <span class="badge bg-info">{{ req.request_type }}</span>
+                </td>
+                <td>
+                    {% if req.notes %}
+                        <small>{{ req.notes[:50] }}{% if req.notes|length > 50 %}...{% endif %}</small>
+                    {% else %}
+                        <small class="text-muted">No additional notes</small>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if req.status == 'Pending' %}
+                        <span class="badge bg-warning text-dark">{{ req.status }}</span>
+                    {% elif req.status == 'Approved' %}
+                        <span class="badge bg-success">{{ req.status }}</span>
+                    {% elif req.status == 'Completed' %}
+                        <span class="badge bg-info">{{ req.status }}</span>
+                    {% else %}
+                        <span class="badge bg-danger">{{ req.status }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <small>{{ req.requested_at[:10] }}</small>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="mt-4 p-3 bg-light rounded">
+    <h6 class="text-muted">Status Guide:</h6>
+    <ul class="text-muted small mb-0">
+        <li><strong>Pending:</strong> Your request has been submitted and awaits review by clinic staff.</li>
+        <li><strong>Approved:</strong> Your request has been approved and scheduled.</li>
+        <li><strong>Completed:</strong> The requested service has been completed.</li>
+        <li><strong>Cancelled:</strong> Your request has been cancelled.</li>
+    </ul>
+</div>
+
+{% else %}
+<div class="alert alert-info text-center py-5">
+    <h5>No service requests yet</h5>
+    <p class="text-muted mb-3">You haven't requested any medical services.</p>
+    <a href="{{ url_for('medical_services') }}" class="btn btn-primary">Request a Service</a>
+</div>
+{% endif %}
+
+<hr>
+<div class="mt-4">
+    <a href="{{ url_for('patient_marketplace') }}" class="btn btn-secondary">Back to Marketplace</a>
+    <a href="{{ url_for('patient_profile') }}" class="btn btn-outline-secondary">Back to Profile</a>
+</div>
+{% endblock %}
