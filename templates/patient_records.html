@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card shadow-lg p-4 border-dark">
+  <h2 class="mb-3 text-dark">Patient Record: {{ patient.first_name }} {{ patient.last_name }}</h2>
+  <div class="row">
+    <div class="col-md-6">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>Patient ID:</strong> {{ patient.id }}</li>
+            <li class="list-group-item"><strong>Date of Birth:</strong> {{ patient.dob }}</li>
+            <li class="list-group-item"><strong>Age:</strong> {{ patient.age }}</li>
+            <li class="list-group-item"><strong>Gender:</strong> {{ patient.gender }}</li>
+            <li class="list-group-item"><strong>Contact:</strong> {{ patient.contact }}</li>
+            <li class="list-group-item"><strong>Address:</strong> {{ patient.address }}</li>
+            <li class="list-group-item"><strong>System Registration Date:</strong> {{ patient.date_added }}</li>
+        </ul>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100 bg-light">
+            <div class="card-header"><strong>Notes:</strong></div>
+            <div class="card-body">{{ patient.notes or 'No notes provided.' }}</div>
+        </div>
+    </div>
+  </div>
+  
+  <div class="mt-4">
+    <a href="{{ url_for('patients') }}" class="btn btn-secondary">← Back to Patient List</a>
+    <a href="{{ url_for('edit_patient', id=patient.id) }}" class="btn btn-warning">Edit Record</a>
+  </div>
+</div>
+{% endblock %}
