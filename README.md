@@ -93,7 +93,7 @@ To develop an efficient and reliable **health record management system** for Bar
 
 Below is the UML Use Case Diagram illustrating the interactions between the **Barangay Health Worker** and the **LIFE System**.
 
-![UML Diagram](https://github.com/user-attachments/assets/dc69da77-adc2-4239-a658-b9691ddd3547)
+![UML Diagram](static/images/Use_Case.png)
 
 ## 🧾 UML Use Case Summary
 
