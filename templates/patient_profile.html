@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+{% block content %}
+
+{% if patient %}
+<div class="card shadow-lg p-5 mt-5">
+    <h2 class="text-info mb-4">🩺 Welcome, {{ patient.first_name }} {{ patient.last_name }}</h2>
+    <h5 class="text-muted">Your Health Profile Summary</h5>
+    <hr>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Patient ID:</strong> {{ patient.id }}</li>
+                <li class="list-group-item"><strong>Date of Birth:</strong> {{ patient.dob }}</li>
+                <li class="list-group-item"><strong>Age:</strong> <span class="badge bg-primary">{{ patient.age }}</span></li>
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Gender:</strong> {{ patient.sex }}</li>
+                <li class="list-group-item"><strong>Contact:</strong> {{ patient.contact }}</li>
+                <li class="list-group-item"><strong>Address:</strong> {{ patient.address or 'N/A' }}</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Health Record Summary -->
+    <div class="card mt-4 mb-3">
+        <div class="card-header bg-light"><strong>Health Record</strong></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <p><strong>Blood Type:</strong> {{ patient.blood_type or 'Not set' }}</p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Status:</strong> <span class="badge bg-{% if patient.health_status == 'Active' %}success{% else %}secondary{% endif %}">{{ patient.health_status or 'Unknown' }}</span></p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Created:</strong> {{ patient.health_created_at[:10] if patient.health_created_at else 'N/A' }}</p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Updated:</strong> {{ patient.health_updated_at[:10] if patient.health_updated_at else 'N/A' }}</p>
+                </div>
+            </div>
+
+            <hr>
+            <div class="mb-2">
+                <h6 class="mb-1">Allergies</h6>
+                <p class="mb-0">{{ patient.allergies or 'No allergies recorded' }}</p>
+            </div>
+            <div>
+                <h6 class="mb-1">Chronic Conditions</h6>
+                <p class="mb-0">{{ patient.chronic_conditions or 'No chronic conditions recorded' }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <h5 class="mt-4">Actions</h5>
+    <hr>
+    <div class="row g-2">
+        <div class="col-md-6">
+            <a href="{{ url_for('patient_edit_profile') }}" class="btn btn-warning w-100">✏️ Update My Information</a>
+        </div>
+        <div class="col-md-6">
+            <a href="{{ url_for('view_health_records') }}" class="btn btn-info w-100">📋 View Health Records</a>
+        </div>
+    </div>
+    
+    <div class="row g-2 mt-3">
+        <div class="col-md-6">
+            <a href="{{ url_for('patient_marketplace') }}" class="btn btn-success w-100">🛒 Shop Marketplace</a>
+        </div>
+        <div class="col-md-6">
+            <a href="{{ url_for('medical_services') }}" class="btn btn-info w-100">⚕️ Request Medical Services</a>
+        </div>
+    </div>
+    
+    <div class="row g-2 mt-3">
+        <div class="col-md-6">
+            <a href="{{ url_for('my_service_requests') }}" class="btn btn-outline-info w-100">📋 My Requests</a>
+        </div>
+        <div class="col-md-6">
+            <a href="{{ url_for('view_cart') }}" class="btn btn-outline-success w-100">🛒 View Cart</a>
+        </div>
+    </div>
+
+</div>
+{% else %}
+<div class="alert alert-danger mt-5">
+    Patient profile not found or sign-in required.
+    <a href="{{ url_for('patient_signin') }}">Go to Patient Sign In</a>
+</div>
+{% endif %}
+
+{% endblock %}
