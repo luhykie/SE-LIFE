@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="mb-4 text-danger">🛒 Administrator Orders (Marketplace)</h2>
+<p class="lead">Review and process all paid or pending orders from the Barangay Health Marketplace.</p>
+
+<div class="table-responsive">
+    <table class="table table-striped table-bordered table-hover align-middle">
+        <thead class="table-danger">
+            <tr>
+                <th>Order ID</th>
+                <th>Patient ID</th>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Total Price</th>
+                <th>Order Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.id }}</td>
+                <td><a href="{{ url_for('view_patient', id=order.patient_id) }}">{{ order.patient_id }}</a></td>
+                <td>{{ order.item_name }}</td>
+                <td>{{ order.quantity }}</td>
+                <td>₱ {{ '%.2f' | format(order.total_price) }}</td>
+                <td>{{ order.date }}</td>
+                <td><span class="badge bg-{{ order.status_color }}">{{ order.status }}</span></td>
+                <td>
+                    {% if order.status == 'Pending' %}
+                    <a href="{{ url_for('fulfill_order', id=order.id) }}" class="btn btn-sm btn-success">Fulfill</a>
+                    <a href="{{ url_for('cancel_order', id=order.id) }}" class="btn btn-sm btn-danger">Cancel</a>
+                    {% else %}
+                    <span class="text-muted">Completed</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center">No marketplace orders currently in the system.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
