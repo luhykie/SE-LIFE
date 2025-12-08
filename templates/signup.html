@@ -1,0 +1,21 @@
+Can't create, edit, or upload … Not enough storage to save to Drive, back up Google Photos, or use Gmail. Get 30 GB of storage for ₱49 ₱10/month for 3 months.
+{% extends "layout.html" %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card p-4 shadow-sm">
+            <h4 class="card-title text-center mb-4 text-success">Register New Account</h4>
+            <p class="text-center text-muted">Choose the account type to register.</p>
+
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('patient_signup') }}" class="btn btn-success">Sign Up as Patient</a>
+                <a href="{{ url_for('worker_signup') }}" class="btn btn-dark">Sign Up as Worker/Admin</a>
+            </div>
+
+            <p class="text-center mt-3 mb-0">
+                Already have an account? <a href="{{ url_for('patient_signin') }}">Patient Sign In</a> or <a href="{{ url_for('worker_signin') }}">Worker Sign In</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
