@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="mb-4 text-dark">Worker / Admin Dashboard <i class="bi bi-speedometer2"></i></h2>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white p-3 shadow-sm">
+            <h4>Total Patients</h4>
+            <h1 class="display-4">{{ stats.total_patients }}</h1>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-dark p-3 shadow-sm">
+            <h4>Pending Requests (Free)</h4>
+            <h1 class="display-4">{{ stats.pending_requests }}</h1>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white p-3 shadow-sm">
+            <h4>New Orders (Paid)</h4>
+            <h1 class="display-4">{{ stats.new_orders }}</h1>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('patients') }}" class="btn btn-primary"><i class="bi bi-people"></i> View All Patient Records</a>
+    <a href="{{ url_for('logs') }}" class="btn btn-secondary"><i class="bi bi-journal-text"></i> View Deleted Logs</a>
+</div>
+{% endblock %}

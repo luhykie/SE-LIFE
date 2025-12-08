@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card p-4 shadow-sm">
+            <h4 class="card-title text-center mb-4 text-primary">Patient Sign In</h4>
+            <p class="text-center text-muted">Please sign in with your patient ID and password.</p>
+
+            {% if error %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+            {% endif %}
+            
+            <form method="POST" action="{{ url_for('patient_signin') }}">
+                <div class="mb-3">
+                    <label class="form-label">Patient ID</label>
+                    <input type="text" name="patient_id" class="form-control" placeholder="Patient ID" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password" class="form-control" placeholder="Password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100">Sign In as Patient</button>
+            </form>
+            <p class="text-center mt-3 mb-0">
+                Are you a Worker/Admin? <a href="{{ url_for('worker_signin') }}">Worker Sign In</a>
+            </p>
+            <p class="text-center mt-2 mb-0 text-muted small">
+                *Use ID: 1, Password: password (for sample profile)
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
