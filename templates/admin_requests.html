@@ -1,0 +1,16 @@
+
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="mb-4 text-dark">Administrative Approvals <i class="bi bi-person-check"></i></h2>
+<div class="alert alert-danger">
+    **Future Feature:** Other high-level administrative approval workflows (e.g., managing user accounts, granting special access, system settings) will be managed here.
+</div>
+
+<div class="card shadow-sm p-4">
+    <h5 class="card-title">System Task Queue</h5>
+    {% if admin_requests %}
+        {% else %}
+        <p class="text-muted">No administrative tasks require approval.</p>
+    {% endif %}
+</div>
+{% endblock %}
