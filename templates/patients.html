@@ -227,7 +227,7 @@
     // Single delete modal functions
     function openDeleteModal(patientId, patientName) {
         document.getElementById('deletePatientName').textContent = patientName;
-        document.getElementById('deleteForm').action = `/remove_patient/${patientId}`;
+        document.getElementById('deleteForm').action = `/remove/${patientId}`;
         document.getElementById('deleteModal').classList.remove('hidden');
         document.getElementById('deleteModal').classList.add('flex');
     }
@@ -275,12 +275,12 @@
         const checkboxes = document.querySelectorAll('.patient-checkbox:checked');
         const ids = Array.from(checkboxes).map(cb => cb.value);
         
-        fetch('/remove_multiple', {
+        const formData = new FormData();
+        ids.forEach(id => formData.append('ids', id));
+        
+        fetch('/remove', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ patient_ids: ids })
+            body: formData
         })
         .then(response => {
             if (response.ok) {
