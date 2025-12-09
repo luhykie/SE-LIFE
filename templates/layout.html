@@ -1,24 +1,387 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Barangay Health Records</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIFE - Barangay Health System</title>
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 85 C30 70, 10 50, 10 35 C10 20, 20 10, 30 10 C40 10, 45 15, 50 25 C55 15, 60 10, 70 10 C80 10, 90 20, 90 35 C90 50, 70 70, 50 85 Z' fill='%23ef4444'/><path d='M25 40 L35 50 L40 45 L45 55 L50 35 L55 50 L60 45 L70 50' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981',
+                        secondary: '#059669',
+                        accent: '#34d399',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        .animate-slideDown { animation: slideDown 0.3s ease-out; }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+        .animate-slideUp { animation: slideUp 0.5s ease-out; }
+        .animate-slideInRight { animation: slideInRight 0.3s ease-out; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        /* Custom scrollbar for sidebar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #059669; }
+        
+        /* Mobile bottom nav safe area */
+        @supports (padding: max(0px)) {
+            .mobile-bottom-nav { padding-bottom: max(env(safe-area-inset-bottom), 0.75rem); }
+        }
+    </style>
 </head>
-<body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-success">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="{{ url_for('home') }}">🏥 Barangay Health System</a>
-    <div class="collapse navbar-collapse" id="navbarNav">
-    </div>
-    {% if session and session.get('user_id') %}
-    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger">🚪Log Out</a>
-    {% endif %}
-  </div>
-</nav>
+<body class="bg-gray-50 min-h-screen pb-20 md:pb-0">
+    <!-- Top Header Bar (Website-style) -->
+    <header class="bg-gradient-to-r from-green-600 via-green-700 to-emerald-700 shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo and Menu Button -->
+                <div class="flex items-center space-x-4">
+                    {% if session and session.get('user_id') %}
+                    <!-- Mobile Menu Button -->
+                    <button onclick="toggleSidebar()" class="md:hidden text-white hover:text-green-200 transition-colors">
+                        <i class="bi bi-list text-3xl"></i>
+                    </button>
+                    {% endif %}
+                    
+                    <!-- Logo -->
+                    <a href="{{ url_for('home') }}" class="flex items-center space-x-3 animate-slideDown">
+                        <i class="bi bi-heart-pulse-fill text-white text-2xl"></i>
+                        <div class="flex flex-col">
+                            <span class="text-white font-bold text-xl leading-tight">LIFE</span>
+                            <span class="text-green-200 text-xs leading-tight hidden sm:block">Health System</span>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation Links -->
+                {% if session and session.get('user_id') %}
+                <nav class="hidden md:flex items-center space-x-1">
+                    {% if session.get('role') == 'worker' %}
+                        <a href="{{ url_for('dashboard') }}" class="text-white hover:bg-green-800 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('patients') }}" class="text-white hover:bg-green-800 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                            <i class="bi bi-people"></i>
+                            <span>Patients</span>
+                        </a>
+                        <a href="{{ url_for('admin_requests') }}" class="text-white hover:bg-green-800 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                            <i class="bi bi-clipboard-check"></i>
+                            <span>Requests</span>
+                        </a>
+                        <a href="{{ url_for('admin_orders') }}" class="text-white hover:bg-green-800 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                            <i class="bi bi-box-seam"></i>
+                            <span>Orders</span>
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('patient_profile') }}" class="text-white hover:bg-green-800 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                            <i class="bi bi-house"></i>
+                            <span>Home</span>
+                        </a>
+                        <a href="{{ url_for('patient_marketplace') }}" class="text-white hover:bg-green-800 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                            <i class="bi bi-shop"></i>
+                            <span>Marketplace</span>
+                        </a>
+                        <a href="{{ url_for('my_service_requests') }}" class="text-white hover:bg-green-800 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                            <i class="bi bi-clipboard-check"></i>
+                            <span>Requests</span>
+                        </a>
+                        <a href="{{ url_for('view_health_records') }}" class="text-white hover:bg-green-800 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                            <i class="bi bi-heart-pulse"></i>
+                            <span>Health</span>
+                        </a>
+                        <a href="{{ url_for('view_cart') }}" class="text-white hover:bg-green-800 px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                            <i class="bi bi-cart"></i>
+                            <span>Cart</span>
+                        </a>
+                    {% endif %}
+                </nav>
+                
+                <!-- User Info & Logout -->
+                <div class="flex items-center space-x-4 animate-slideDown">
+                    <div class="hidden lg:flex items-center space-x-2 text-white">
+                        <i class="bi bi-person-circle text-xl"></i>
+                        <span class="text-sm font-medium">
+                            {% if session.get('role') == 'worker' %}Admin{% else %}Patient{% endif %}
+                        </span>
+                    </div>
+                    <button onclick="document.getElementById('logoutModal').classList.remove('hidden')" 
+                            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center space-x-2 shadow-lg">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span class="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
 
-<div class="container mt-4">
-    {% block content %}{% endblock %}
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Mobile Sidebar (Swipeable) -->
+    {% if session and session.get('user_id') %}
+    <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onclick="toggleSidebar()"></div>
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-72 bg-white shadow-2xl transform -translate-x-full transition-transform duration-300 z-50 md:hidden custom-scrollbar overflow-y-auto">
+        <div class="bg-gradient-to-r from-green-600 to-emerald-700 p-6 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="bi bi-heart-pulse-fill text-white text-3xl"></i>
+                <div>
+                    <h2 class="text-white font-bold text-lg">LIFE</h2>
+                    <p class="text-green-200 text-xs">{% if session.get('role') == 'worker' %}Admin Panel{% else %}Patient Portal{% endif %}</p>
+                </div>
+            </div>
+            <button onclick="toggleSidebar()" class="text-white hover:text-green-200">
+                <i class="bi bi-x-lg text-2xl"></i>
+            </button>
+        </div>
+        
+        <nav class="p-4 space-y-2">
+            {% if session.get('role') == 'worker' %}
+                <a href="{{ url_for('dashboard') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-speedometer2 text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Dashboard</span>
+                </a>
+                <a href="{{ url_for('patients') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-people text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Patients</span>
+                </a>
+                <a href="{{ url_for('admin_requests') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-clipboard-check text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Service Requests</span>
+                </a>
+                <a href="{{ url_for('admin_orders') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-box-seam text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Orders</span>
+                </a>
+                <a href="{{ url_for('logs') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-trash text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Deleted Records</span>
+                </a>
+            {% else %}
+                <a href="{{ url_for('patient_profile') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-house-fill text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Home</span>
+                </a>
+                <a href="{{ url_for('patient_marketplace') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-shop text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Marketplace</span>
+                </a>
+                <a href="{{ url_for('medical_services') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-heart-pulse text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Medical Services</span>
+                </a>
+                <a href="{{ url_for('view_health_records') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-file-medical text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Health Records</span>
+                </a>
+                <a href="{{ url_for('my_service_requests') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-clipboard-check text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">My Requests</span>
+                </a>
+                <a href="{{ url_for('view_cart') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-cart-fill text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Shopping Cart</span>
+                </a>
+                <a href="{{ url_for('purchase_history') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-clock-history text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Purchase History</span>
+                </a>
+                <a href="{{ url_for('patient_edit_profile') }}" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="bi bi-person-gear text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-gray-700 font-medium">Edit Profile</span>
+                </a>
+            {% endif %}
+        </nav>
+        
+        <div class="p-4 border-t border-gray-200">
+            <button onclick="document.getElementById('logoutModal').classList.remove('hidden'); toggleSidebar();" 
+                    class="w-full flex items-center justify-center space-x-2 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg transition-all transform hover:scale-105 shadow-lg">
+                <i class="bi bi-box-arrow-right text-xl"></i>
+                <span class="font-semibold">Logout</span>
+            </button>
+        </div>
+    </aside>
+    {% endif %}
+
+    <!-- Logout Modal -->
+    <div id="logoutModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-slideUp">
+            <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-2xl">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold flex items-center space-x-2">
+                        <i class="bi bi-box-arrow-right text-2xl"></i>
+                        <span>Confirm Logout</span>
+                    </h3>
+                    <button onclick="document.getElementById('logoutModal').classList.add('hidden')" 
+                            class="text-white hover:text-gray-200 transition-colors">
+                        <i class="bi bi-x-lg text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-800 font-semibold mb-2">Are you sure you want to log out?</p>
+                <p class="text-gray-600 text-sm">You will need to sign in again to access your account.</p>
+            </div>
+            <div class="px-6 pb-6 flex space-x-3">
+                <button onclick="document.getElementById('logoutModal').classList.add('hidden')" 
+                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <a href="{{ url_for('logout') }}" 
+                   class="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 text-center">
+                    <i class="bi bi-box-arrow-right"></i> Yes, Log Out
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Mobile Bottom Navigation -->
+    {% if session and session.get('user_id') %}
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 mobile-bottom-nav">
+        <div class="flex justify-around items-center h-16">
+            {% if session.get('role') == 'worker' %}
+                <a href="{{ url_for('dashboard') }}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-green-600 transition-colors py-2">
+                    <i class="bi bi-speedometer2 text-2xl"></i>
+                    <span class="text-xs mt-1">Dashboard</span>
+                </a>
+                <a href="{{ url_for('patients') }}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-green-600 transition-colors py-2">
+                    <i class="bi bi-people text-2xl"></i>
+                    <span class="text-xs mt-1">Patients</span>
+                </a>
+                <a href="{{ url_for('admin_requests') }}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-green-600 transition-colors py-2">
+                    <i class="bi bi-clipboard-check text-2xl"></i>
+                    <span class="text-xs mt-1">Requests</span>
+                </a>
+                <a href="{{ url_for('admin_orders') }}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-green-600 transition-colors py-2">
+                    <i class="bi bi-box-seam text-2xl"></i>
+                    <span class="text-xs mt-1">Orders</span>
+                </a>
+            {% else %}
+                <a href="{{ url_for('patient_profile') }}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-green-600 transition-colors py-2">
+                    <i class="bi bi-house-fill text-2xl"></i>
+                    <span class="text-xs mt-1">Home</span>
+                </a>
+                <a href="{{ url_for('patient_marketplace') }}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-green-600 transition-colors py-2">
+                    <i class="bi bi-shop text-2xl"></i>
+                    <span class="text-xs mt-1">Shop</span>
+                </a>
+                <a href="{{ url_for('my_service_requests') }}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-green-600 transition-colors py-2">
+                    <i class="bi bi-clipboard-check text-2xl"></i>
+                    <span class="text-xs mt-1">Requests</span>
+                </a>
+                <a href="{{ url_for('view_health_records') }}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-green-600 transition-colors py-2">
+                    <i class="bi bi-heart-pulse text-2xl"></i>
+                    <span class="text-xs mt-1">Health</span>
+                </a>
+                <a href="{{ url_for('view_cart') }}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-green-600 transition-colors py-2">
+                    <i class="bi bi-cart-fill text-2xl"></i>
+                    <span class="text-xs mt-1">Cart</span>
+                </a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12 mb-16 md:mb-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <p class="text-center text-gray-600 text-sm">
+                © 2025 LIFE - Local Information for Health Efficiency | Barangay Duljo Fatima
+            </p>
+        </div>
+    </footer>
+
+    <!-- Sidebar Toggle Script -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar && overlay) {
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebar.classList.add('animate-slideInRight');
+                    overlay.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                }
+            }
+        }
+
+        // Close sidebar on window resize to desktop size
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                if (sidebar && overlay) {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                }
+            }
+        });
+
+        // Add swipe gesture support for mobile sidebar
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+
+            const swipeDistance = touchEndX - touchStartX;
+            const isOpen = !sidebar.classList.contains('-translate-x-full');
+
+            // Swipe right to open (from left edge)
+            if (swipeDistance > 100 && touchStartX < 50 && !isOpen) {
+                toggleSidebar();
+            }
+            // Swipe left to close
+            else if (swipeDistance < -100 && isOpen) {
+                toggleSidebar();
+            }
+        }
+    </script>
 </body>
 </html>

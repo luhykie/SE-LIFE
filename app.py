@@ -159,6 +159,32 @@ def init_db():
         )
     """)
     
+    # Purchase Orders table (completed cart purchases)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS purchase_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            total_amount REAL NOT NULL,
+            status TEXT DEFAULT 'Completed',
+            purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id)
+        )
+    """)
+    
+    # Purchase Order Items table (items in each order)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS purchase_order_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id INTEGER NOT NULL,
+            item_id INTEGER NOT NULL,
+            item_name TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            price REAL NOT NULL,
+            FOREIGN KEY (order_id) REFERENCES purchase_orders(id),
+            FOREIGN KEY (item_id) REFERENCES marketplace_items(id)
+        )
+    """)
+    
     # Add a default admin if none exists (for testing)
     c.execute("SELECT * FROM workers WHERE barangay_id = 'ADMIN123'")
     if c.fetchone() is None:
@@ -214,8 +240,36 @@ def init_db():
 # -----------------------------
 @app.route("/")
 def home():
-    # Don't clear session here, just render. Session management happens on signin/logout
+    """Home page - redirects to appropriate dashboard if logged in."""
+    if session.get("role") == "worker":
+        return redirect(url_for("dashboard"))
+    elif session.get("role") == "patient":
+        return redirect(url_for("patient_profile"))
     return render_template("home.html")
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    """Worker/Admin dashboard with statistics."""
+    db = get_db()
+    c = db.cursor()
+    
+    # Get total patients count
+    total_patients = c.execute("SELECT COUNT(*) as count FROM patients").fetchone()["count"]
+    
+    # Get pending service requests count
+    pending_requests = c.execute("SELECT COUNT(*) as count FROM service_requests WHERE status = 'Pending'").fetchone()["count"]
+    
+    # For now, new orders is 0 (can be implemented later with marketplace orders)
+    new_orders = 0
+    
+    stats = {
+        'total_patients': total_patients,
+        'pending_requests': pending_requests,
+        'new_orders': new_orders
+    }
+    
+    return render_template("patient_dashboard.html", stats=stats)
 
 @app.route("/worker_signin", methods=["GET", "POST"])
 def worker_signin():
@@ -231,7 +285,7 @@ def worker_signin():
             if worker:
                 session["user_id"] = worker["barangay_id"]
                 session["role"] = worker["role"]
-                return redirect(url_for("patients")) 
+                return redirect(url_for("dashboard")) 
             else:
                 return render_template("worker_signin.html", error="Invalid credentials or Barangay ID.")
         except KeyError:
@@ -675,10 +729,23 @@ def patient_marketplace():
     # Fetch all marketplace items
     items = c.execute("SELECT * FROM marketplace_items WHERE stock > 0").fetchall()
     
-    # Count items in cart
-    cart_count = c.execute("SELECT COUNT(*) as cnt FROM cart WHERE patient_id = ?", (patient_id,)).fetchone()["cnt"]
+    # Get cart summary
+    cart_items = c.execute("""
+        SELECT c.quantity, m.price 
+        FROM cart c 
+        JOIN marketplace_items m ON c.item_id = m.id 
+        WHERE c.patient_id = ?
+    """, (patient_id,)).fetchall()
     
-    return render_template("patient_marketplace.html", items=items, cart_count=cart_count)
+    cart_count = len(cart_items)
+    cart_total_qty = sum(item["quantity"] for item in cart_items)
+    cart_total_price = sum(item["quantity"] * item["price"] for item in cart_items)
+    
+    return render_template("patient_marketplace.html", 
+                         items=items, 
+                         cart_count=cart_count,
+                         cart_total_qty=cart_total_qty,
+                         cart_total_price=cart_total_price)
 
 @app.route("/add_to_cart/<int:item_id>", methods=["POST"])
 def add_to_cart(item_id):
@@ -714,6 +781,33 @@ def add_to_cart(item_id):
     
     db.commit()
     return redirect(url_for("patient_marketplace"))
+
+@app.route("/cart_summary")
+def cart_summary():
+    """Returns cart summary as JSON for AJAX requests."""
+    if session.get("role") != 'patient':
+        return {"error": "Unauthorized"}, 401
+    
+    patient_id = session.get("user_id")
+    db = get_db()
+    c = db.cursor()
+    
+    cart_items = c.execute("""
+        SELECT c.quantity, m.price 
+        FROM cart c 
+        JOIN marketplace_items m ON c.item_id = m.id 
+        WHERE c.patient_id = ?
+    """, (patient_id,)).fetchall()
+    
+    cart_count = len(cart_items)
+    cart_total_qty = sum(item["quantity"] for item in cart_items)
+    cart_total_price = sum(item["quantity"] * item["price"] for item in cart_items)
+    
+    return {
+        "count": cart_count,
+        "total_qty": cart_total_qty,
+        "total_price": float(cart_total_price)
+    }
 
 @app.route("/cart")
 def view_cart():
@@ -788,6 +882,10 @@ def remove_from_cart(cart_id):
         c.execute("DELETE FROM cart WHERE id = ?", (cart_id,))
         db.commit()
     
+    # Check if AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return {"success": True, "message": "Item removed from cart"}
+    
     return redirect(url_for("view_cart"))
 
 @app.route("/clear_cart", methods=["POST"])
@@ -804,6 +902,92 @@ def clear_cart():
     db.commit()
     
     return redirect(url_for("view_cart"))
+
+@app.route("/checkout", methods=["POST"])
+def checkout():
+    """Process cart checkout and create purchase order."""
+    if session.get("role") != 'patient':
+        return redirect(url_for('patient_signin'))
+    
+    patient_id = session.get("user_id")
+    db = get_db()
+    c = db.cursor()
+    
+    # Get cart items with details
+    cart_items = c.execute("""
+        SELECT c.id, c.item_id, c.quantity, m.name, m.price, m.stock
+        FROM cart c
+        JOIN marketplace_items m ON c.item_id = m.id
+        WHERE c.patient_id = ?
+    """, (patient_id,)).fetchall()
+    
+    if not cart_items:
+        return redirect(url_for("view_cart"))
+    
+    # Calculate total and check stock
+    total_amount = 0
+    for item in cart_items:
+        if item["quantity"] > item["stock"]:
+            return redirect(url_for("view_cart"))  # Insufficient stock
+        total_amount += item["price"] * item["quantity"]
+    
+    # Create purchase order
+    c.execute("""
+        INSERT INTO purchase_orders (patient_id, total_amount, status)
+        VALUES (?, ?, 'Completed')
+    """, (patient_id, total_amount))
+    order_id = c.lastrowid
+    
+    # Add order items and update stock
+    for item in cart_items:
+        c.execute("""
+            INSERT INTO purchase_order_items (order_id, item_id, item_name, quantity, price)
+            VALUES (?, ?, ?, ?, ?)
+        """, (order_id, item["item_id"], item["name"], item["quantity"], item["price"]))
+        
+        # Update marketplace item stock
+        c.execute("""
+            UPDATE marketplace_items
+            SET stock = stock - ?
+            WHERE id = ?
+        """, (item["quantity"], item["item_id"]))
+    
+    # Clear cart
+    c.execute("DELETE FROM cart WHERE patient_id = ?", (patient_id,))
+    
+    db.commit()
+    return redirect(url_for("purchase_history"))
+
+@app.route("/purchase_history")
+def purchase_history():
+    """View patient's purchase history."""
+    if session.get("role") != 'patient':
+        return redirect(url_for('patient_signin'))
+    
+    patient_id = session.get("user_id")
+    db = get_db()
+    c = db.cursor()
+    
+    # Get all orders for patient
+    orders = c.execute("""
+        SELECT * FROM purchase_orders
+        WHERE patient_id = ?
+        ORDER BY purchased_at DESC
+    """, (patient_id,)).fetchall()
+    
+    # Get items for each order
+    orders_with_items = []
+    for order in orders:
+        order_items = c.execute("""
+            SELECT * FROM purchase_order_items
+            WHERE order_id = ?
+        """, (order["id"],)).fetchall()
+        orders_with_items.append({
+            "order": dict(order),
+            "order_items": [dict(item) for item in order_items]
+        })
+    
+    return render_template("purchase_history.html", orders=orders_with_items)
 
 @app.route("/medical_services")
 def medical_services():
@@ -943,6 +1127,76 @@ def edit_health_records():
         return redirect(url_for("view_health_records"))
     
     return render_template("edit_health_records.html", health_record=health_record)
+
+@app.route("/admin_requests")
+@login_required
+def admin_requests():
+    """Displays all service requests for admin to approve/reject."""
+    db = get_db()
+    c = db.cursor()
+    
+    # Fetch all service requests with patient and service details
+    requests_data = c.execute("""
+        SELECT sr.id, sr.patient_id, sr.request_type, sr.notes, sr.status, sr.requested_at,
+               ms.name as service_name, ms.description as service_description,
+               p.first_name, p.last_name, p.contact
+        FROM service_requests sr
+        JOIN medical_services ms ON sr.service_id = ms.id
+        JOIN patients p ON sr.patient_id = p.id
+        ORDER BY sr.requested_at DESC
+    """).fetchall()
+    
+    return render_template("admin_requests.html", requests=requests_data)
+
+@app.route("/update_request_status/<int:request_id>", methods=["POST"])
+@login_required
+def update_request_status(request_id):
+    """Approve or reject a service request."""
+    status = request.form.get("status")
+    
+    if status not in ["Approved", "Rejected"]:
+        return redirect(url_for("admin_requests"))
+    
+    db = get_db()
+    c = db.cursor()
+    
+    c.execute("""
+        UPDATE service_requests
+        SET status = ?
+        WHERE id = ?
+    """, (status, request_id))
+    
+    db.commit()
+    return redirect(url_for("admin_requests"))
+
+@app.route("/admin_orders")
+@login_required
+def admin_orders():
+    """View all purchase orders for admin."""
+    db = get_db()
+    c = db.cursor()
+    
+    # Get all orders with patient details
+    orders = c.execute("""
+        SELECT po.*, p.first_name, p.last_name, p.contact
+        FROM purchase_orders po
+        JOIN patients p ON po.patient_id = p.id
+        ORDER BY po.purchased_at DESC
+    """).fetchall()
+    
+    # Get items for each order
+    orders_with_items = []
+    for order in orders:
+        order_items = c.execute("""
+            SELECT * FROM purchase_order_items
+            WHERE order_id = ?
+        """, (order["id"],)).fetchall()
+        orders_with_items.append({
+            "order": dict(order),
+            "order_items": [dict(item) for item in order_items]
+        })
+    
+    return render_template("admin_orders.html", orders=orders_with_items)
 
 
 if __name__ == "__main__":

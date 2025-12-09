@@ -1,18 +1,31 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-5">
-        <div class="card p-4 shadow-sm">
-            <h4 class="card-title text-center mb-4 text-success">Register New Account</h4>
-            <p class="text-center text-muted">Choose the account type to register.</p>
-
-            <div class="d-grid gap-2">
-                <a href="{{ url_for('patient_signup') }}" class="btn btn-success">Sign Up as Patient</a>
-                <a href="{{ url_for('worker_signup') }}" class="btn btn-dark">Sign Up as Worker/Admin</a>
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 animate-fadeIn">
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <div class="text-center mb-8">
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-t-2xl -mx-8 -mt-8 p-6 mb-6">
+                    <i class="bi bi-person-plus-fill text-5xl mb-3"></i>
+                    <h2 class="text-3xl font-bold">Register New Account</h2>
+                    <p class="text-green-100 mt-2">Choose the account type to register</p>
+                </div>
             </div>
 
-            <p class="text-center mt-3 mb-0">
-                Already have an account? <a href="{{ url_for('patient_signin') }}">Patient Sign In</a> or <a href="{{ url_for('worker_signin') }}">Worker Sign In</a>
+            <div class="space-y-4">
+                <a href="{{ url_for('patient_signup') }}" class="block w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-4 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg text-center">
+                    <i class="bi bi-person-fill text-2xl"></i>
+                    <span class="ml-2">Sign Up as Patient</span>
+                </a>
+                <a href="{{ url_for('worker_signup') }}" class="block w-full bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black text-white font-semibold py-4 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg text-center">
+                    <i class="bi bi-briefcase-fill text-2xl"></i>
+                    <span class="ml-2">Sign Up as Worker/Admin</span>
+                </a>
+            </div>
+
+            <p class="text-center mt-6 text-gray-600">
+                Already have an account? 
+                <a href="{{ url_for('patient_signin') }}" class="text-green-600 hover:text-green-700 font-semibold">Patient Sign In</a> or 
+                <a href="{{ url_for('worker_signin') }}" class="text-gray-700 hover:text-gray-900 font-semibold">Worker Sign In</a>
             </p>
         </div>
     </div>

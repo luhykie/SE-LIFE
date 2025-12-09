@@ -1,88 +1,143 @@
 {% extends "layout.html" %}
 {% block content %}
-<h2 class="mb-4">🛒 My Shopping Cart</h2>
-
-{% if cart_items %}
-<div class="table-responsive mb-4">
-    <table class="table table-striped table-hover align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>Product Name</th>
-                <th>Unit Price</th>
-                <th>Quantity</th>
-                <th>Subtotal</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in cart_items %}
-            <tr>
-                <td>
-                    <strong>{{ item.name }}</strong>
-                    <br>
-                    <small class="text-muted">Available: {{ item.stock }} units</small>
-                </td>
-                <td>₱ {{ '%.2f' | format(item.price) }}</td>
-                <td>
-                    <form action="{{ url_for('update_cart', cart_id=item.id) }}" method="POST" style="display:inline;">
-                        <div class="input-group" style="width: 100px;">
-                            <input type="number" name="quantity" class="form-control form-control-sm" value="{{ item.quantity }}" min="1" max="{{ item.stock }}" required>
-                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Update Quantity">↻</button>
-                        </div>
-                    </form>
-                </td>
-                <td><strong>₱ {{ '%.2f' | format(item.price * item.quantity) }}</strong></td>
-                <td>
-                    <form action="{{ url_for('remove_from_cart', cart_id=item.id) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger">Remove</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<!-- Header -->
+<div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-8 rounded-lg shadow-lg mb-8 animate-slideDown">
+    <h2 class="text-3xl font-bold flex items-center gap-3">
+        <i class="bi bi-cart-fill"></i>
+        My Shopping Cart
+    </h2>
+    <p class="text-green-100 mt-2">Review your items and proceed to checkout</p>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-6"></div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Order Summary</h5>
-                <hr>
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Subtotal:</span>
-                    <strong>₱ {{ '%.2f' | format(total_price) }}</strong>
-                </div>
-                <div class="d-flex justify-content-between mb-3">
-                    <span>Shipping:</span>
-                    <strong>FREE</strong>
-                </div>
-                <hr>
-                <div class="d-flex justify-content-between mb-3">
-                    <h6>Total Amount:</h6>
-                    <h5 class="text-success">₱ {{ '%.2f' | format(total_price) }}</h5>
-                </div>
-                <button class="btn btn-success w-100 mb-2" disabled>Proceed to Checkout (Coming Soon)</button>
-                <form action="{{ url_for('clear_cart') }}" method="POST" style="display:inline-block; width:100%;">
-                    <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('Are you sure you want to clear your cart?');">Clear Cart</button>
-                </form>
+{% if cart_items %}
+<!-- Cart Items -->
+<div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8 animate-fadeIn card-hover">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gradient-to-r from-gray-700 to-gray-800">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Product Name</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Unit Price</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Quantity</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Subtotal</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Action</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for item in cart_items %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="font-semibold text-gray-900">{{ item.name }}</div>
+                        <div class="text-sm text-gray-500 mt-1">
+                            <i class="bi bi-box-seam"></i> Available: {{ item.stock }} units
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-700">₱ {{ '%.2f' | format(item.price) }}</td>
+                    <td class="px-6 py-4">
+                        <form action="{{ url_for('update_cart', cart_id=item.id) }}" method="POST" class="flex items-center gap-2">
+                            <input type="number" name="quantity" class="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="{{ item.quantity }}" min="1" max="{{ item.stock }}" required>
+                            <button type="submit" class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all transform hover:scale-105" title="Update Quantity">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </form>
+                    </td>
+                    <td class="px-6 py-4 font-bold text-green-600">₱ {{ '%.2f' | format(item.price * item.quantity) }}</td>
+                    <td class="px-6 py-4">
+                        <button onclick="removeItem({{ item.id }})" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all transform hover:scale-105">
+                            <i class="bi bi-trash"></i> Remove
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Order Summary -->
+<div class="grid md:grid-cols-2 gap-8 mb-8">
+    <div></div>
+    <div class="bg-white rounded-lg shadow-lg p-6 card-hover animate-fadeIn">
+        <h5 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="bi bi-receipt"></i>
+            Order Summary
+        </h5>
+        <hr class="mb-4 border-gray-200">
+        
+        <div class="space-y-3 mb-4">
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">Subtotal:</span>
+                <strong class="text-gray-800">₱ {{ '%.2f' | format(total_price) }}</strong>
             </div>
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">Shipping:</span>
+                <strong class="text-green-600">FREE</strong>
+            </div>
+        </div>
+        
+        <hr class="mb-4 border-gray-200">
+        
+        <div class="flex justify-between items-center mb-6">
+            <h6 class="text-lg font-semibold text-gray-800">Total Amount:</h6>
+            <h5 class="text-2xl font-bold text-green-600">₱ {{ '%.2f' | format(total_price) }}</h5>
+        </div>
+        
+        <div class="space-y-3">
+            <form action="{{ url_for('checkout') }}" method="POST" class="w-full">
+                <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 font-semibold shadow-lg">
+                    <i class="bi bi-credit-card"></i> Checkout Now
+                </button>
+            </form>
+            <form action="{{ url_for('clear_cart') }}" method="POST" class="w-full">
+                <button type="submit" class="w-full border-2 border-red-500 text-red-500 px-6 py-3 rounded-lg hover:bg-red-500 hover:text-white transition-all transform hover:scale-105 font-semibold" onclick="return confirm('Are you sure you want to clear your cart?');">
+                    <i class="bi bi-trash"></i> Clear Cart
+                </button>
+            </form>
         </div>
     </div>
 </div>
 
 {% else %}
-<div class="alert alert-info text-center py-5">
-    <h5>Your cart is empty</h5>
-    <p class="text-muted mb-3">Start adding items from the marketplace!</p>
-    <a href="{{ url_for('patient_marketplace') }}" class="btn btn-primary">Continue Shopping</a>
+<!-- Empty Cart -->
+<div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-12 text-center animate-fadeIn">
+    <i class="bi bi-cart-x text-6xl text-blue-400 mb-4"></i>
+    <h5 class="text-2xl font-bold text-gray-800 mb-2">Your cart is empty</h5>
+    <p class="text-gray-600 mb-6">Start adding items from the marketplace!</p>
+    <a href="{{ url_for('patient_marketplace') }}" class="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-3 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 font-semibold shadow-lg">
+        <i class="bi bi-shop"></i> Continue Shopping
+    </a>
 </div>
 {% endif %}
 
-<hr>
-<div class="mt-4">
-    <a href="{{ url_for('patient_marketplace') }}" class="btn btn-secondary">Back to Marketplace</a>
-    <a href="{{ url_for('patient_profile') }}" class="btn btn-outline-secondary">Back to Profile</a>
+<!-- Navigation -->
+<hr class="my-8 border-gray-200">
+<div class="flex flex-wrap gap-4">
+    <a href="{{ url_for('patient_marketplace') }}" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all transform hover:scale-105 font-semibold shadow-lg">
+        <i class="bi bi-arrow-left"></i> Back to Marketplace
+    </a>
+    <a href="{{ url_for('patient_profile') }}" class="px-6 py-3 border-2 border-gray-600 text-gray-600 rounded-lg hover:bg-gray-600 hover:text-white transition-all transform hover:scale-105 font-semibold">
+        <i class="bi bi-person"></i> Back to Profile
+    </a>
 </div>
+
+<script>
+function removeItem(cartId) {
+    if (confirm('Are you sure you want to remove this item from your cart?')) {
+        fetch(`/remove_from_cart/${cartId}`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload page to show updated cart
+                window.location.reload();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+</script>
 {% endblock %}

@@ -1,86 +1,108 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2>⚕️ Medical Services Request</h2>
-        <p class="text-muted">Request healthcare services from the Barangay Health Center.</p>
-    </div>
-    <div>
-        <a href="{{ url_for('my_service_requests') }}" class="btn btn-info">
-            📋 My Requests
-        </a>
-    </div>
+<!-- Header -->
+<div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-8 rounded-lg shadow-lg mb-6 animate-slideDown">
+    <h2 class="text-3xl font-bold flex items-center gap-3">
+        <i class="bi bi-heart-pulse-fill"></i>
+        Medical Services Request
+    </h2>
+    <p class="text-blue-100 mt-2">Request healthcare services from the Barangay Health Center.</p>
+</div>
+
+<div class="mb-8 animate-fadeIn">
+    <a href="{{ url_for('my_service_requests') }}" class="block bg-white text-blue-600 p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105 border-2 border-blue-500">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <i class="bi bi-clipboard-check-fill text-4xl"></i>
+                <div>
+                    <h3 class="text-2xl font-bold">My Requests</h3>
+                    <p class="text-blue-400">View and track your service requests</p>
+                </div>
+            </div>
+            <i class="bi bi-arrow-right-circle text-4xl"></i>
+        </div>
+    </a>
 </div>
 
 {% if services %}
-<div class="row">
-    {% set current_category = "" %}
+<!-- Services Grid -->
+<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
     {% for service in services %}
-        {% if service.category != current_category %}
-            {% if current_category != "" %}</div></div></div>{% endif %}
-            {% set current_category = service.category %}
-            <div class="col-md-12 mb-4">
-                <h4 class="text-primary border-bottom pb-2">{{ current_category }} Services</h4>
-                <div class="row">
-        {% endif %}
-        
-        <div class="col-md-6 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title text-info">{{ service.name }}</h5>
-                    <p class="card-text">{{ service.description }}</p>
+    <div onclick="openModal{{ service.id }}()" class="bg-white rounded-lg shadow-lg overflow-hidden card-hover cursor-pointer transition-all transform hover:scale-105 hover:shadow-2xl">
+        <div class="bg-gradient-to-r from-blue-400 to-indigo-500 text-white p-4">
+            <h5 class="text-xl font-bold">{{ service.name }}</h5>
+            <p class="text-blue-100 text-sm mt-1">
+                <i class="bi bi-tag-fill"></i> {{ service.category }}
+            </p>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-700 mb-4">{{ service.description }}</p>
+            <div class="flex items-center justify-center text-blue-600 font-semibold">
+                <i class="bi bi-plus-circle text-xl mr-2"></i>
+                <span>Click to Request</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Modal (Tailwind) -->
+    <div id="requestModal{{ service.id }}" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-md w-full animate-slideDown">
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-t-lg">
+                <h5 class="text-2xl font-bold">Request {{ service.name }}</h5>
+            </div>
+            <form action="{{ url_for('request_service', service_id=service.id) }}" method="POST">
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-gray-700 font-semibold mb-2">Request Type</label>
+                        <select name="request_type" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            <option value="General Request">General Request</option>
+                            <option value="Urgent">Urgent</option>
+                            <option value="Scheduled">Scheduled Appointment</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-semibold mb-2">Additional Notes (Optional)</label>
+                        <textarea name="notes" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Any specific information or requests..."></textarea>
+                    </div>
                 </div>
-                <div class="card-footer bg-white">
-                    <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#requestModal{{ service.id }}">
-                        Request Service
+                <div class="p-6 pt-0 flex gap-3">
+                    <button type="button" onclick="closeModal{{ service.id }}()" class="flex-1 bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-all font-semibold">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all font-semibold">
+                        Submit Request
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
+    </div>
 
-        <!-- Request Modal -->
-        <div class="modal fade" id="requestModal{{ service.id }}" tabindex="-1" aria-labelledby="requestModalLabel{{ service.id }}" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="requestModalLabel{{ service.id }}">Request {{ service.name }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <form action="{{ url_for('request_service', service_id=service.id) }}" method="POST">
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <label class="form-label">Request Type</label>
-                                <select name="request_type" class="form-select" required>
-                                    <option value="General Request">General Request</option>
-                                    <option value="Urgent">Urgent</option>
-                                    <option value="Scheduled">Scheduled Appointment</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Additional Notes (Optional)</label>
-                                <textarea name="notes" class="form-control" rows="3" placeholder="Any specific information or requests..."></textarea>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Submit Request</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+    <script>
+        function openModal{{ service.id }}() {
+            document.getElementById('requestModal{{ service.id }}').classList.remove('hidden');
+        }
+        function closeModal{{ service.id }}() {
+            document.getElementById('requestModal{{ service.id }}').classList.add('hidden');
+        }
+    </script>
     {% endfor %}
-    {% if current_category != "" %}</div></div></div>{% endif %}
 </div>
 {% else %}
-<div class="alert alert-info">No medical services are currently available. Please check back later!</div>
+<div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-12 text-center animate-fadeIn">
+    <i class="bi bi-info-circle text-6xl text-blue-400 mb-4"></i>
+    <h5 class="text-2xl font-bold text-gray-800">No Services Available</h5>
+    <p class="text-gray-600 mt-2">No medical services are currently available. Please check back later!</p>
+</div>
 {% endif %}
 
-<hr>
-<div class="mt-4">
-    <a href="{{ url_for('patient_marketplace') }}" class="btn btn-secondary">Back to Marketplace</a>
-    <a href="{{ url_for('patient_profile') }}" class="btn btn-outline-secondary">Back to Profile</a>
+<!-- Navigation -->
+<hr class="my-8 border-gray-200">
+<div class="flex flex-wrap gap-4">
+    <a href="{{ url_for('patient_marketplace') }}" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all transform hover:scale-105 font-semibold shadow-lg">
+        <i class="bi bi-arrow-left"></i> Back to Marketplace
+    </a>
+    <a href="{{ url_for('patient_profile') }}" class="px-6 py-3 border-2 border-gray-600 text-gray-600 rounded-lg hover:bg-gray-600 hover:text-white transition-all transform hover:scale-105 font-semibold">
+        <i class="bi bi-person"></i> Back to Profile
+    </a>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}

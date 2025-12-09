@@ -1,81 +1,124 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>📋 My Service Requests</h2>
-    <a href="{{ url_for('medical_services') }}" class="btn btn-primary">
-        ⚕️ Request More Services
+<!-- Header -->
+<div class="bg-gradient-to-r from-purple-500 to-pink-600 text-white p-8 rounded-lg shadow-lg mb-6 animate-slideDown">
+    <h2 class="text-3xl font-bold flex items-center gap-3">
+        <i class="bi bi-clipboard-check-fill"></i>
+        My Service Requests
+    </h2>
+    <p class="text-purple-100 mt-2">Track your medical service requests</p>
+</div>
+
+<div class="mb-8 animate-fadeIn">
+    <a href="{{ url_for('medical_services') }}" class="block bg-white text-purple-600 p-6 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105 border-2 border-purple-500">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <i class="bi bi-heart-pulse-fill text-4xl"></i>
+                <div>
+                    <h3 class="text-2xl font-bold">Request More Services</h3>
+                    <p class="text-purple-400">Browse available medical services</p>
+                </div>
+            </div>
+            <i class="bi bi-arrow-right-circle text-4xl"></i>
+        </div>
     </a>
 </div>
 
 {% if requests %}
-<div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>Request ID</th>
-                <th>Service Name</th>
-                <th>Request Type</th>
-                <th>Notes</th>
-                <th>Status</th>
-                <th>Requested Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for req in requests %}
-            <tr>
-                <td><strong>#{{ req.id }}</strong></td>
-                <td>{{ req.service_name }}</td>
-                <td>
-                    <span class="badge bg-info">{{ req.request_type }}</span>
-                </td>
-                <td>
-                    {% if req.notes %}
-                        <small>{{ req.notes[:50] }}{% if req.notes|length > 50 %}...{% endif %}</small>
-                    {% else %}
-                        <small class="text-muted">No additional notes</small>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if req.status == 'Pending' %}
-                        <span class="badge bg-warning text-dark">{{ req.status }}</span>
-                    {% elif req.status == 'Approved' %}
-                        <span class="badge bg-success">{{ req.status }}</span>
-                    {% elif req.status == 'Completed' %}
-                        <span class="badge bg-info">{{ req.status }}</span>
-                    {% else %}
-                        <span class="badge bg-danger">{{ req.status }}</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <small>{{ req.requested_at[:10] }}</small>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<!-- Requests Table -->
+<div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8 animate-fadeIn card-hover">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gradient-to-r from-gray-700 to-gray-800">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Request ID</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Service Name</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Request Type</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Notes</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Requested Date</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for req in requests %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 font-bold text-purple-600">#{{ req.id }}</td>
+                    <td class="px-6 py-4 font-semibold text-gray-900">{{ req.service_name }}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">{{ req.request_type }}</span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-700 text-sm">
+                        {% if req.notes %}
+                            {{ req.notes[:50] }}{% if req.notes|length > 50 %}...{% endif %}
+                        {% else %}
+                            <span class="text-gray-400 italic">No additional notes</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if req.status == 'Pending' %}
+                            <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold">{{ req.status }}</span>
+                        {% elif req.status == 'Approved' %}
+                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">{{ req.status }}</span>
+                        {% elif req.status == 'Completed' %}
+                            <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">{{ req.status }}</span>
+                        {% else %}
+                            <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold">{{ req.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-gray-700 text-sm">{{ req.requested_at[:10] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<div class="mt-4 p-3 bg-light rounded">
-    <h6 class="text-muted">Status Guide:</h6>
-    <ul class="text-muted small mb-0">
-        <li><strong>Pending:</strong> Your request has been submitted and awaits review by clinic staff.</li>
-        <li><strong>Approved:</strong> Your request has been approved and scheduled.</li>
-        <li><strong>Completed:</strong> The requested service has been completed.</li>
-        <li><strong>Cancelled:</strong> Your request has been cancelled.</li>
+<!-- Status Guide -->
+<div class="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-purple-200 rounded-lg p-6 mb-8 animate-fadeIn">
+    <h6 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+        <i class="bi bi-info-circle-fill text-purple-600"></i>
+        Status Guide
+    </h6>
+    <ul class="space-y-2 text-gray-700">
+        <li class="flex items-start gap-2">
+            <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm font-semibold">Pending</span>
+            <span>Your request has been submitted and awaits review by clinic staff.</span>
+        </li>
+        <li class="flex items-start gap-2">
+            <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-sm font-semibold">Approved</span>
+            <span>Your request has been approved and scheduled.</span>
+        </li>
+        <li class="flex items-start gap-2">
+            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-semibold">Completed</span>
+            <span>The requested service has been completed.</span>
+        </li>
+        <li class="flex items-start gap-2">
+            <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-sm font-semibold">Cancelled</span>
+            <span>Your request has been cancelled.</span>
+        </li>
     </ul>
 </div>
 
 {% else %}
-<div class="alert alert-info text-center py-5">
-    <h5>No service requests yet</h5>
-    <p class="text-muted mb-3">You haven't requested any medical services.</p>
-    <a href="{{ url_for('medical_services') }}" class="btn btn-primary">Request a Service</a>
+<!-- Empty State -->
+<div class="bg-purple-50 border-2 border-purple-200 rounded-lg p-12 text-center animate-fadeIn">
+    <i class="bi bi-clipboard-x text-6xl text-purple-400 mb-4"></i>
+    <h5 class="text-2xl font-bold text-gray-800 mb-2">No service requests yet</h5>
+    <p class="text-gray-600 mb-6">You haven't requested any medical services.</p>
+    <a href="{{ url_for('medical_services') }}" class="inline-block bg-gradient-to-r from-purple-500 to-pink-600 text-white px-8 py-3 rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all transform hover:scale-105 font-semibold shadow-lg">
+        <i class="bi bi-plus-circle"></i> Request a Service
+    </a>
 </div>
 {% endif %}
 
-<hr>
-<div class="mt-4">
-    <a href="{{ url_for('patient_marketplace') }}" class="btn btn-secondary">Back to Marketplace</a>
-    <a href="{{ url_for('patient_profile') }}" class="btn btn-outline-secondary">Back to Profile</a>
+<!-- Navigation -->
+<hr class="my-8 border-gray-200">
+<div class="flex flex-wrap gap-4">
+    <a href="{{ url_for('patient_marketplace') }}" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all transform hover:scale-105 font-semibold shadow-lg">
+        <i class="bi bi-arrow-left"></i> Back to Marketplace
+    </a>
+    <a href="{{ url_for('patient_profile') }}" class="px-6 py-3 border-2 border-gray-600 text-gray-600 rounded-lg hover:bg-gray-600 hover:text-white transition-all transform hover:scale-105 font-semibold">
+        <i class="bi bi-person"></i> Back to Profile
+    </a>
 </div>
 {% endblock %}

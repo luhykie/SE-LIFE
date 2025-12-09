@@ -1,83 +1,85 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>📋 My Health Records</h2>
-    <a href="{{ url_for('edit_health_records') }}" class="btn btn-warning">
-        ✏️ Edit Health Records
-    </a>
+<!-- Header -->
+<div class="bg-gradient-to-r from-red-500 to-rose-600 text-white p-8 rounded-lg shadow-lg mb-8 animate-slideDown">
+    <h2 class="text-3xl font-bold flex items-center gap-3">
+        <i class="bi bi-heart-pulse-fill"></i>
+        My Health Records
+    </h2>
+    <p class="text-red-100 mt-2">Your personal medical information</p>
 </div>
 
-<div class="card shadow-lg p-4">
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card mb-3 border-left-primary">
-                <div class="card-body">
-                    <h5 class="card-title text-primary">Blood Type</h5>
-                    <p class="card-text h4 text-danger fw-bold">
-                        {{ health_record.blood_type if health_record.blood_type else 'Not Set' }}
-                    </p>
-                </div>
-            </div>
+<div class="bg-white rounded-lg shadow-lg p-8 animate-fadeIn card-hover">
+    <!-- Health Info Cards -->
+    <div class="grid md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-6 shadow-md">
+            <h5 class="text-lg font-bold text-blue-700 mb-3 flex items-center gap-2">
+                <i class="bi bi-droplet-fill"></i>
+                Blood Type
+            </h5>
+            <p class="text-4xl font-bold text-red-600">
+                {{ health_record.blood_type if health_record.blood_type else 'Not Set' }}
+            </p>
         </div>
-        <div class="col-md-6">
-            <div class="card mb-3 border-left-info">
-                <div class="card-body">
-                    <h5 class="card-title text-info">Status</h5>
-                    <p class="card-text">
-                        <span class="badge bg-{% if health_record.status == 'Active' %}success{% else %}warning{% endif %} p-2">
-                            {{ health_record.status if health_record.status else 'Unknown' }}
-                        </span>
-                    </p>
-                </div>
-            </div>
+        <div class="bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-6 shadow-md">
+            <h5 class="text-lg font-bold text-green-700 mb-3 flex items-center gap-2">
+                <i class="bi bi-heart-fill"></i>
+                Status
+            </h5>
+            <span class="px-4 py-2 rounded-full text-lg font-bold {% if health_record.status == 'Active' %}bg-green-500 text-white{% else %}bg-yellow-500 text-white{% endif %}">
+                {{ health_record.status if health_record.status else 'Unknown' }}
+            </span>
         </div>
     </div>
 
-    <div class="mb-4">
-        <h5 class="text-warning mb-3">⚠️ Allergies</h5>
-        <div class="alert alert-light border border-warning">
-            <p class="mb-0">
+    <!-- Allergies Section -->
+    <div class="mb-6">
+        <h5 class="text-xl font-bold text-yellow-600 mb-3 flex items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Allergies
+        </h5>
+        <div class="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+            <p class="text-gray-800">
                 {{ health_record.allergies if health_record.allergies else 'No allergies recorded' }}
             </p>
         </div>
     </div>
 
-    <div class="mb-4">
-        <h5 class="text-danger mb-3">🏥 Chronic Conditions</h5>
-        <div class="alert alert-light border border-danger">
-            <p class="mb-0">
+    <!-- Chronic Conditions Section -->
+    <div class="mb-6">
+        <h5 class="text-xl font-bold text-red-600 mb-3 flex items-center gap-2">
+            <i class="bi bi-hospital-fill"></i>
+            Chronic Conditions
+        </h5>
+        <div class="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+            <p class="text-gray-800">
                 {{ health_record.chronic_conditions if health_record.chronic_conditions else 'No chronic conditions recorded' }}
             </p>
         </div>
     </div>
 
-    <hr>
+    <hr class="my-6 border-gray-200">
 
-    <div class="row text-muted small">
-        <div class="col-md-6">
-            <p><strong>Created:</strong> {{ health_record.created_at[:10] if health_record.created_at else 'N/A' }}</p>
-        </div>
-        <div class="col-md-6">
-            <p><strong>Last Updated:</strong> {{ health_record.updated_at[:10] if health_record.updated_at else 'N/A' }}</p>
-        </div>
+    <!-- Timestamps -->
+    <div class="grid md:grid-cols-2 gap-4 mb-6 text-gray-600">
+        <p class="flex items-center gap-2">
+            <i class="bi bi-calendar-plus"></i>
+            <strong>Created:</strong> {{ health_record.created_at[:10] if health_record.created_at else 'N/A' }}
+        </p>
+        <p class="flex items-center gap-2">
+            <i class="bi bi-calendar-check"></i>
+            <strong>Last Updated:</strong> {{ health_record.updated_at[:10] if health_record.updated_at else 'N/A' }}
+        </p>
     </div>
 
-    <div class="mt-4">
-        <a href="{{ url_for('edit_health_records') }}" class="btn btn-warning">
-            ✏️ Edit Information
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-4">
+        <a href="{{ url_for('edit_health_records') }}" class="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all transform hover:scale-105 font-semibold shadow-lg">
+            <i class="bi bi-pencil-square"></i> Edit Information
         </a>
-        <a href="{{ url_for('patient_profile') }}" class="btn btn-secondary">
-            Back to Profile
+        <a href="{{ url_for('patient_profile') }}" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all transform hover:scale-105 font-semibold shadow-lg">
+            <i class="bi bi-arrow-left"></i> Back to Profile
         </a>
     </div>
 </div>
-
-<style>
-.border-left-primary {
-    border-left: 4px solid #007bff !important;
-}
-.border-left-info {
-    border-left: 4px solid #17a2b8 !important;
-}
-</style>
 {% endblock %}
