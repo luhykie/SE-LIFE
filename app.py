@@ -131,17 +131,14 @@ def close_connection(exception):
         db.close()
 
 def init_db():
-        conn = pymysql.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            database=DB_NAME,
-            cursorclass=pymysql.cursors.DictCursor
-        )
-    else:
-        import sqlite3
-        conn = sqlite3.connect(DATABASE)
+    conn = pymysql.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME,
+        cursorclass=pymysql.cursors.DictCursor
+    )
     
     c = conn.cursor()
     
@@ -1454,5 +1451,6 @@ def admin_orders():
 
 
 if __name__ == "__main__":
-    init_db()
+    # Database is already initialized via init_mysql_db.py
+    # init_db()  # Comment out - use init_mysql_db.py instead
     app.run(debug=True)
