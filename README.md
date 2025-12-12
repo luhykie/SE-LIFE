@@ -59,7 +59,7 @@ To develop an efficient and reliable **health record management system** for Bar
 | Member | Role | Tools Used | Primary Contributions |
 | :--- | :--- | :--- | :--- |
 | **Lyka Mae Entera** | **Project Leader & Backend Developer** | VS Code, Python/Flask | Server-side logic, API integration, code structure, and backend functionality. |
-| **Kea Abaquita** | **UI/UX Designer & Frontend** | Figma, HTML/CSS | User interface design, prototyping, wireframes, and frontend implementation. |
+| **Kea Abaquita** | **UI/UX Designer & Frontend** | Figma, HTML, Tailwind CSS | User interface design, prototyping, wireframes, and frontend implementation. |
 | **Pantine Hernando** | **System Analyst** | draw.io, UML Tools | System architecture, database design (ERD), flowcharts, and use-case modeling. |   
 
 ---
@@ -86,8 +86,9 @@ To develop an efficient and reliable **health record management system** for Bar
 
 ### Technologies Used
 - **Backend:** Python (Flask, Jinja2)  
-- **Frontend:** HTML, CSS, JavaScript  
-- **Database:** SQLite / MySQL  
+- **Frontend:** HTML, Tailwind CSS, JavaScript
+- **Database:** SQLite / MySQL, Aiven
+- **Deployment:** Render
 
 ---
 
@@ -153,6 +154,7 @@ Barangay Health Worker – manages all patient-related operations.
 - ✅ Fully functional **Barangay Health Record Management System (LIFE)**  
 - 📘 Complete **Documentation** (Use Case, UML, and User Guide)  
 - 🗄️ **Cloud Database Integration** with MySQL/Aiven support
+- 
 
 ---
 
