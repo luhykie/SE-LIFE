@@ -1,11 +1,28 @@
 from flask import Flask, render_template, request, redirect, url_for, g, session
-import sqlite3
+import pymysql
+import os
 from datetime import datetime, date 
 from functools import wraps
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
-DATABASE = "patients.db"
-app.secret_key = 'this_is_a_secure_random_key_for_session_management' 
+
+# Database configuration - supports both SQLite (local) and MySQL (production)
+USE_MYSQL = os.environ.get('USE_MYSQL', 'False') == 'True'
+
+if USE_MYSQL:
+    DB_HOST = os.environ.get('DB_HOST')
+    DB_PORT = int(os.environ.get('DB_PORT', 3306))
+    DB_USER = os.environ.get('DB_USER')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD')
+    DB_NAME = os.environ.get('DB_NAME')
+else:
+    DATABASE = "patients.db"
+
+app.secret_key = os.environ.get('SECRET_KEY', 'this_is_a_secure_random_key_for_session_management') 
 
 # -----------------------------
 # Security & Utility Functions
@@ -33,12 +50,123 @@ def calculate_age(dob_str):
 # -----------------------------
 # Database Connection & Setup
 # -----------------------------
+
+class DatabaseWrapper:
+    """Wrapper to make SQLite and MySQL queries compatible"""
+    def __init__(self, connection, is_mysql=False):
+        self.connection = connection
+        self.is_mysql = is_mysql
+        
+    def cursor(self):
+        if self.is_mysql:
+            return MySQLCursorWrapper(self.connection.cursor(), self.connection)
+        else:
+            return SQLiteCursorWrapper(self.connection)
+    
+    def execute(self, query, args=()):
+        """For direct execution (SQLite style)"""
+        cur = self.cursor()
+        cur.execute(query, args)
+        return cur
+    
+    def commit(self):
+        self.connection.commit()
+    
+    def close(self):
+        self.connection.close()
+
+class MySQLCursorWrapper:
+    """Wrapper for MySQL cursor to handle ? placeholders"""
+    def __init__(self, cursor, connection):
+        self.cursor = cursor
+        self.connection = connection
+        
+    def execute(self, query, args=()):
+        # Convert SQLite ? placeholders to MySQL %s
+        query = query.replace('?', '%s')
+        self.cursor.execute(query, args)
+        return self
+    
+    @property
+    def lastrowid(self):
+        return self.cursor.lastrowid
+        
+    def fetchone(self):
+        return self.cursor.fetchone()
+    
+    def fetchall(self):
+        return self.cursor.fetchall()
+    
+    def close(self):
+        self.cursor.close()
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            self.connection.commit()
+        self.close()
+
+class SQLiteCursorWrapper:
+    """Wrapper for SQLite cursor for consistency"""
+    def __init__(self, connection):
+        self.connection = connection
+        
+    def execute(self, query, args=()):
+        self.cursor = self.connection.execute(query, args)
+        return self
+    
+    @property
+    def lastrowid(self):
+        return self.cursor.lastrowid
+        
+    def fetchone(self):
+        return self.cursor.fetchone()
+    
+    def fetchall(self):
+        return self.cursor.fetchall()
+    
+    def close(self):
+        pass
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            self.connection.commit()
+
 def get_db():
     db = getattr(g, "_database", None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row
+        if USE_MYSQL:
+            conn = pymysql.connect(
+                host=DB_HOST,
+                port=DB_PORT,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME,
+                cursorclass=pymysql.cursors.DictCursor,
+                autocommit=False
+            )
+            db = g._database = DatabaseWrapper(conn, is_mysql=True)
+        else:
+            import sqlite3
+            conn = sqlite3.connect(DATABASE)
+            conn.row_factory = sqlite3.Row
+            db = g._database = DatabaseWrapper(conn, is_mysql=False)
     return db
+
+def query_db(query, args=(), one=False):
+    """
+    Helper function to execute queries and return results.
+    """
+    db = get_db()
+    cur = db.execute(query, args)
+    rv = cur.fetchall()
+    cur.close()
+    return (rv[0] if rv else None) if one else rv
 
 @app.teardown_appcontext
 def close_connection(exception):
@@ -47,143 +175,307 @@ def close_connection(exception):
         db.close()
 
 def init_db():
-    conn = sqlite3.connect(DATABASE)
+    if USE_MYSQL:
+        conn = pymysql.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            cursorclass=pymysql.cursors.DictCursor
+        )
+    else:
+        import sqlite3
+        conn = sqlite3.connect(DATABASE)
+    
     c = conn.cursor()
+    
     # Patients table
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS patients (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            last_name TEXT NOT NULL,
-            first_name TEXT NOT NULL,
-            middle_name TEXT,
-            suffix TEXT,
-            dob TEXT NOT NULL,
-            sex TEXT NOT NULL,
-            contact TEXT,
-            address TEXT,
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS patients (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                last_name VARCHAR(255) NOT NULL,
+                first_name VARCHAR(255) NOT NULL,
+                middle_name VARCHAR(255),
+                suffix VARCHAR(50),
+                dob DATE NOT NULL,
+                sex VARCHAR(50) NOT NULL,
+                contact VARCHAR(50),
+                address TEXT,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS patients (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                last_name TEXT NOT NULL,
+                first_name TEXT NOT NULL,
+                middle_name TEXT,
+                suffix TEXT,
+                dob TEXT NOT NULL,
+                sex TEXT NOT NULL,
+                contact TEXT,
+                address TEXT,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    
     # Logs table
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS logs (
-            id INTEGER,
-            last_name TEXT,
-            first_name TEXT,
-            middle_name TEXT,
-            suffix TEXT,
-            dob TEXT,
-            sex TEXT,
-            contact TEXT,
-            address TEXT,
-            notes TEXT,
-            action TEXT,
-            deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS logs (
+                log_id INT AUTO_INCREMENT PRIMARY KEY,
+                id INT,
+                last_name VARCHAR(255),
+                first_name VARCHAR(255),
+                middle_name VARCHAR(255),
+                suffix VARCHAR(50),
+                dob DATE,
+                sex VARCHAR(50),
+                contact VARCHAR(50),
+                address TEXT,
+                notes TEXT,
+                action VARCHAR(50),
+                deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS logs (
+                id INTEGER,
+                last_name TEXT,
+                first_name TEXT,
+                middle_name TEXT,
+                suffix TEXT,
+                dob TEXT,
+                sex TEXT,
+                contact TEXT,
+                address TEXT,
+                notes TEXT,
+                action TEXT,
+                deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    
     # Workers/Admin table
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS workers (
-            barangay_id TEXT PRIMARY KEY,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL
-        )
-    """)
-    # Patient accounts table (separate from patient demographics)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS patient_accounts (
-            patient_id INTEGER UNIQUE,
-            username TEXT UNIQUE,
-            password TEXT NOT NULL,
-            FOREIGN KEY (patient_id) REFERENCES patients(id)
-        )
-    """)
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS workers (
+                barangay_id VARCHAR(255) PRIMARY KEY,
+                password VARCHAR(255) NOT NULL,
+                role VARCHAR(50) NOT NULL
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS workers (
+                barangay_id TEXT PRIMARY KEY,
+                password TEXT NOT NULL,
+                role TEXT NOT NULL
+            )
+        """)
+    
+    # Patient accounts table
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS patient_accounts (
+                patient_id INT PRIMARY KEY,
+                username VARCHAR(255) UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS patient_accounts (
+                patient_id INTEGER PRIMARY KEY,
+                username TEXT UNIQUE,
+                password TEXT NOT NULL,
+                FOREIGN KEY (patient_id) REFERENCES patients(id)
+            )
+        """)
+    
     # Marketplace Items table
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS marketplace_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT,
-            stock INTEGER NOT NULL,
-            price REAL DEFAULT 0
-        )
-    """)
-    # Cart table (stores temporary cart items per patient session)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS cart (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            item_id INTEGER NOT NULL,
-            quantity INTEGER NOT NULL,
-            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (patient_id) REFERENCES patients(id)
-        )
-    """)
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                stock INT NOT NULL,
+                price DECIMAL(10, 2) DEFAULT 0
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS marketplace_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT,
+                stock INTEGER NOT NULL,
+                price REAL DEFAULT 0
+            )
+        """)
+    
+    # Cart table
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS cart (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                patient_id INT NOT NULL,
+                item_id INT NOT NULL,
+                quantity INT NOT NULL,
+                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS cart (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id INTEGER NOT NULL,
+                item_id INTEGER NOT NULL,
+                quantity INTEGER NOT NULL,
+                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(id)
+            )
+        """)
+    
     # Medical Services table
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS medical_services (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT,
-            category TEXT NOT NULL
-        )
-    """)
-    # Health Records table (patient health information)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS health_records (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL UNIQUE,
-            blood_type TEXT,
-            allergies TEXT,
-            chronic_conditions TEXT,
-            status TEXT DEFAULT 'Active',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (patient_id) REFERENCES patients(id)
-        )
-    """)
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS medical_services (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                category VARCHAR(100) NOT NULL
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS medical_services (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT,
+                category TEXT NOT NULL
+            )
+        """)
     
-    # Service Requests table (patient requests for medical services)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS service_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            service_id INTEGER NOT NULL,
-            request_type TEXT NOT NULL,
-            notes TEXT,
-            status TEXT DEFAULT 'Pending',
-            requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (patient_id) REFERENCES patients(id),
-            FOREIGN KEY (service_id) REFERENCES medical_services(id)
-        )
-    """)
+    # Health Records table
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS health_records (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                patient_id INT NOT NULL UNIQUE,
+                blood_type VARCHAR(10),
+                allergies TEXT,
+                chronic_conditions TEXT,
+                status VARCHAR(50) DEFAULT 'Active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS health_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id INTEGER NOT NULL UNIQUE,
+                blood_type TEXT,
+                allergies TEXT,
+                chronic_conditions TEXT,
+                status TEXT DEFAULT 'Active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(id)
+            )
+        """)
     
-    # Purchase Orders table (completed cart purchases)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS purchase_orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            total_amount REAL NOT NULL,
-            status TEXT DEFAULT 'Completed',
-            purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (patient_id) REFERENCES patients(id)
-        )
-    """)
+    # Service Requests table
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS service_requests (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                patient_id INT NOT NULL,
+                service_id INT NOT NULL,
+                request_type VARCHAR(100) NOT NULL,
+                notes TEXT,
+                status VARCHAR(50) DEFAULT 'Pending',
+                requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+                FOREIGN KEY (service_id) REFERENCES medical_services(id) ON DELETE CASCADE
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS service_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id INTEGER NOT NULL,
+                service_id INTEGER NOT NULL,
+                request_type TEXT NOT NULL,
+                notes TEXT,
+                status TEXT DEFAULT 'Pending',
+                requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(id),
+                FOREIGN KEY (service_id) REFERENCES medical_services(id)
+            )
+        """)
     
-    # Purchase Order Items table (items in each order)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS purchase_order_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            order_id INTEGER NOT NULL,
-            item_id INTEGER NOT NULL,
-            item_name TEXT NOT NULL,
-            quantity INTEGER NOT NULL,
-            price REAL NOT NULL,
-            FOREIGN KEY (order_id) REFERENCES purchase_orders(id),
-            FOREIGN KEY (item_id) REFERENCES marketplace_items(id)
-        )
-    """)
+    # Purchase Orders table
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS purchase_orders (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                patient_id INT NOT NULL,
+                total_amount DECIMAL(10, 2) NOT NULL,
+                status VARCHAR(50) DEFAULT 'Completed',
+                purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS purchase_orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id INTEGER NOT NULL,
+                total_amount REAL NOT NULL,
+                status TEXT DEFAULT 'Completed',
+                purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(id)
+            )
+        """)
+    
+    # Purchase Order Items table
+    if USE_MYSQL:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS purchase_order_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                order_id INT NOT NULL,
+                item_id INT NOT NULL,
+                item_name VARCHAR(255) NOT NULL,
+                quantity INT NOT NULL,
+                price DECIMAL(10, 2) NOT NULL,
+                FOREIGN KEY (order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
+                FOREIGN KEY (item_id) REFERENCES marketplace_items(id) ON DELETE CASCADE
+            )
+        """)
+    else:
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS purchase_order_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER NOT NULL,
+                item_id INTEGER NOT NULL,
+                item_name TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                price REAL NOT NULL,
+                FOREIGN KEY (order_id) REFERENCES purchase_orders(id),
+                FOREIGN KEY (item_id) REFERENCES marketplace_items(id)
+            )
+        """)
     
     # Add a default admin if none exists (for testing)
     c.execute("SELECT * FROM workers WHERE barangay_id = 'ADMIN123'")
@@ -193,7 +485,11 @@ def init_db():
     # Add a default patient if none exists (for testing)
     c.execute("SELECT * FROM patients WHERE id = 1")
     if c.fetchone() is None:
-         c.execute("INSERT INTO patients (id, last_name, first_name, dob, sex, contact) VALUES (1, 'Dela Cruz', 'Juan', '1990-01-01', 'Male', '09170000001')")
+        if USE_MYSQL:
+            c.execute("INSERT INTO patients (id, last_name, first_name, dob, sex, contact) VALUES (1, 'Dela Cruz', 'Juan', '1990-01-01', 'Male', '09170000001')")
+        else:
+            c.execute("INSERT INTO patients (id, last_name, first_name, dob, sex, contact) VALUES (1, 'Dela Cruz', 'Juan', '1990-01-01', 'Male', '09170000001')")
+    
     # Ensure a patient account exists for the default patient (username = '1', password = 'password')
     c.execute("SELECT * FROM patient_accounts WHERE patient_id = 1")
     if c.fetchone() is None:
@@ -208,8 +504,11 @@ def init_db():
         """)
     
     # Add default marketplace items if none exist
-    count_result = c.execute("SELECT COUNT(*) as cnt FROM marketplace_items").fetchone()
-    if count_result[0] == 0:
+    c.execute("SELECT COUNT(*) as cnt FROM marketplace_items")
+    count_result = c.fetchone()
+    item_count = count_result['cnt'] if USE_MYSQL else count_result[0]
+    
+    if item_count == 0:
         c.execute("""
             INSERT INTO marketplace_items (name, description, stock, price) VALUES 
             ('Vitamin C Supplement', 'Boost your immunity with Vitamin C', 50, 150.00),
@@ -220,8 +519,11 @@ def init_db():
         """)
     
     # Add default medical services if none exist
-    count_services = c.execute("SELECT COUNT(*) as cnt FROM medical_services").fetchone()
-    if count_services[0] == 0:
+    c.execute("SELECT COUNT(*) as cnt FROM medical_services")
+    count_services = c.fetchone()
+    service_count = count_services['cnt'] if USE_MYSQL else count_services[0]
+    
+    if service_count == 0:
         c.execute("""
             INSERT INTO medical_services (name, description, category) VALUES 
             ('Vaccine', 'Immunization services', 'Preventive'),
@@ -279,8 +581,7 @@ def worker_signin():
             barangay_id = request.form["barangay_id"]
             password = request.form["password"]
 
-            db = get_db()
-            worker = db.execute("SELECT * FROM workers WHERE barangay_id = ? AND password = ?", (barangay_id, password)).fetchone()
+            worker = query_db("SELECT * FROM workers WHERE barangay_id = ? AND password = ?", (barangay_id, password), one=True)
             
             if worker:
                 session["user_id"] = worker["barangay_id"]
@@ -299,9 +600,7 @@ def patient_signin():
     if request.method == "POST":
         patient_id = request.form.get("patient_id")
         password = request.form.get("password")
-        db = get_db()
-        c = db.cursor()
-        account = c.execute("SELECT * FROM patient_accounts WHERE username = ? AND password = ?", (patient_id, password)).fetchone()
+        account = query_db("SELECT * FROM patient_accounts WHERE username = ? AND password = ?", (patient_id, password), one=True)
         if account:
             session["user_id"] = account["patient_id"] if "patient_id" in account.keys() else account[0]
             session["role"] = 'patient'

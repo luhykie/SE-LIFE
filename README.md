@@ -16,6 +16,8 @@
 
 **LIFE (Local Information for Health Efficiency)** is a **web-based barangay health tracking system** designed for **Barangay Duljo Fatima**. It enables health workers to manage patient records efficiently through a secure and user-friendly platform. The system replaces manual record-keeping, reduces errors, and improves accessibility to vital health data.
 
+**🆕 Now with Cloud Database Support!** The system supports both SQLite (local development) and MySQL (cloud deployment with Aiven) for real-time synchronization across multiple users.
+
 ---
 
 ## 🎯 Objectives
@@ -150,6 +152,34 @@ Barangay Health Worker – manages all patient-related operations.
 
 - ✅ Fully functional **Barangay Health Record Management System (LIFE)**  
 - 📘 Complete **Documentation** (Use Case, UML, and User Guide)  
+- 🗄️ **Cloud Database Integration** with MySQL/Aiven support
+
+---
+
+## 🚀 Quick Start
+
+### Local Development (SQLite)
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python app.py
+```
+
+### Production with MySQL (Aiven)
+See [MIGRATION_SUMMARY.md](MIGRATION_SUMMARY.md) for complete setup instructions.
+
+**Quick Steps:**
+1. Set up Aiven MySQL database
+2. Set environment variables
+3. Run `python test_connection.py` to verify
+4. Run `python init_mysql_db.py` to initialize
+5. Deploy to Render
+
+**Default Credentials:**
+- Admin: ID=`ADMIN123`, Password=`password`
+- Patient: Username=`1`, Password=`password`
 
 ---
 

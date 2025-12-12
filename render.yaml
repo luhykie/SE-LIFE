@@ -7,3 +7,17 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
+      - key: USE_MYSQL
+        value: True
+      - key: DB_HOST
+        sync: false  # Set this in Render dashboard
+      - key: DB_PORT
+        value: 3306
+      - key: DB_USER
+        sync: false  # Set this in Render dashboard
+      - key: DB_PASSWORD
+        sync: false  # Set this in Render dashboard (make it secret)
+      - key: DB_NAME
+        sync: false  # Set this in Render dashboard
+      - key: SECRET_KEY
+        generateValue: true  # Render will generate a secure random key
