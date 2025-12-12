@@ -64,11 +64,11 @@
     <div class="grid md:grid-cols-2 gap-4 mb-6 text-gray-600">
         <p class="flex items-center gap-2">
             <i class="bi bi-calendar-plus"></i>
-            <strong>Created:</strong> {{ health_record.created_at[:10] if health_record.created_at else 'N/A' }}
+            <strong>Created:</strong> {{ health_record.created_at.strftime('%Y-%m-%d') if health_record.created_at else 'N/A' }}
         </p>
         <p class="flex items-center gap-2">
             <i class="bi bi-calendar-check"></i>
-            <strong>Last Updated:</strong> {{ health_record.updated_at[:10] if health_record.updated_at else 'N/A' }}
+            <strong>Last Updated:</strong> {{ health_record.updated_at.strftime('%Y-%m-%d') if health_record.updated_at else 'N/A' }}
         </p>
     </div>
 

@@ -65,7 +65,7 @@
                             <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold">{{ req.status }}</span>
                         {% endif %}
                     </td>
-                    <td class="px-6 py-4 text-gray-700 text-sm">{{ req.requested_at[:10] }}</td>
+                    <td class="px-6 py-4 text-gray-700 text-sm">{{ req.requested_at.strftime('%Y-%m-%d') if req.requested_at else 'N/A' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

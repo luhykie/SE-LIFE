@@ -71,11 +71,11 @@
                 </div>
                 <div class="bg-blue-50 rounded-lg p-3">
                     <p class="text-xs text-gray-600 mb-1">Record Created</p>
-                    <p class="text-sm font-semibold text-blue-600">{{ patient.health_created_at[:10] if patient.health_created_at else 'N/A' }}</p>
+                    <p class="text-sm font-semibold text-blue-600">{{ patient.health_created_at.strftime('%Y-%m-%d') if patient.health_created_at else 'N/A' }}</p>
                 </div>
                 <div class="bg-purple-50 rounded-lg p-3">
                     <p class="text-xs text-gray-600 mb-1">Last Updated</p>
-                    <p class="text-sm font-semibold text-purple-600">{{ patient.health_updated_at[:10] if patient.health_updated_at else 'N/A' }}</p>
+                    <p class="text-sm font-semibold text-purple-600">{{ patient.health_updated_at.strftime('%Y-%m-%d') if patient.health_updated_at else 'N/A' }}</p>
                 </div>
             </div>
             <div class="space-y-3">

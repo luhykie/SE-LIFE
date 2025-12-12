@@ -139,7 +139,6 @@ def init_db():
         database=DB_NAME,
         cursorclass=pymysql.cursors.DictCursor
     )
-    
     c = conn.cursor()
     
     # Patients table
