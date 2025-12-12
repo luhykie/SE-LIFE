@@ -114,7 +114,8 @@ Barangay Health Worker – manages all patient-related operations.
 | **Search and Filter Records** | Search or filter by name, ID, gender, or age. | Enters keyword or applies filters. |
 | **Navigate System** | Move between Home, Patient Records, and About pages. | Clicks navigation buttons. |
 | **Display Confirmation Dialogs** | Confirm or cancel sensitive actions (e.g., Delete, Save). | Performs an action requiring confirmation. |
-
+| **Order Medical Items (Cart/Marketplace)** | Patients can order medical supplies such as medicines, thermometer, etc. | Patient opens Marketplace and adds items to cart. |
+| **Request Medical Services** | Patients can request services like dental, vaccination, check-ups, etc. | Patient submits a service request form. |
 ---
 
 ## ⏱️ Project Timeline
