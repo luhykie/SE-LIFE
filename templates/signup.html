@@ -16,16 +16,11 @@
                     <i class="bi bi-person-fill text-2xl"></i>
                     <span class="ml-2">Sign Up as Patient</span>
                 </a>
-                <a href="{{ url_for('worker_signup') }}" class="block w-full bg-gradient-to-r from-gray-700 to-gray-900 hover:from-gray-800 hover:to-black text-white font-semibold py-4 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg text-center">
-                    <i class="bi bi-briefcase-fill text-2xl"></i>
-                    <span class="ml-2">Sign Up as Worker/Admin</span>
-                </a>
             </div>
 
             <p class="text-center mt-6 text-gray-600">
                 Already have an account? 
-                <a href="{{ url_for('patient_signin') }}" class="text-green-600 hover:text-green-700 font-semibold">Patient Sign In</a> or 
-                <a href="{{ url_for('worker_signin') }}" class="text-gray-700 hover:text-gray-900 font-semibold">Worker Sign In</a>
+                <a href="{{ url_for('patient_signin') }}" class="text-green-600 hover:text-green-700 font-semibold">Sign In</a>
             </p>
         </div>
     </div>
