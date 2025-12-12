@@ -10,17 +10,12 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Database configuration - supports both SQLite (local) and MySQL (production)
-USE_MYSQL = os.environ.get('USE_MYSQL', 'False') == 'True'
-
-if USE_MYSQL:
-    DB_HOST = os.environ.get('DB_HOST')
-    DB_PORT = int(os.environ.get('DB_PORT', 3306))
-    DB_USER = os.environ.get('DB_USER')
-    DB_PASSWORD = os.environ.get('DB_PASSWORD')
-    DB_NAME = os.environ.get('DB_NAME')
-else:
-    DATABASE = "patients.db"
+# MySQL Database configuration
+DB_HOST = os.environ.get('DB_HOST')
+DB_PORT = int(os.environ.get('DB_PORT', 3306))
+DB_USER = os.environ.get('DB_USER')
+DB_PASSWORD = os.environ.get('DB_PASSWORD')
+DB_NAME = os.environ.get('DB_NAME')
 
 app.secret_key = os.environ.get('SECRET_KEY', 'this_is_a_secure_random_key_for_session_management') 
 
@@ -51,30 +46,6 @@ def calculate_age(dob_str):
 # Database Connection & Setup
 # -----------------------------
 
-class DatabaseWrapper:
-    """Wrapper to make SQLite and MySQL queries compatible"""
-    def __init__(self, connection, is_mysql=False):
-        self.connection = connection
-        self.is_mysql = is_mysql
-        
-    def cursor(self):
-        if self.is_mysql:
-            return MySQLCursorWrapper(self.connection.cursor(), self.connection)
-        else:
-            return SQLiteCursorWrapper(self.connection)
-    
-    def execute(self, query, args=()):
-        """For direct execution (SQLite style)"""
-        cur = self.cursor()
-        cur.execute(query, args)
-        return cur
-    
-    def commit(self):
-        self.connection.commit()
-    
-    def close(self):
-        self.connection.close()
-
 class MySQLCursorWrapper:
     """Wrapper for MySQL cursor to handle ? placeholders"""
     def __init__(self, cursor, connection):
@@ -82,7 +53,7 @@ class MySQLCursorWrapper:
         self.connection = connection
         
     def execute(self, query, args=()):
-        # Convert SQLite ? placeholders to MySQL %s
+        # Convert ? placeholders to MySQL %s
         query = query.replace('?', '%s')
         self.cursor.execute(query, args)
         return self
@@ -108,54 +79,39 @@ class MySQLCursorWrapper:
             self.connection.commit()
         self.close()
 
-class SQLiteCursorWrapper:
-    """Wrapper for SQLite cursor for consistency"""
+class DatabaseWrapper:
+    """Wrapper for MySQL connection"""
     def __init__(self, connection):
         self.connection = connection
         
+    def cursor(self):
+        return MySQLCursorWrapper(self.connection.cursor(), self.connection)
+    
     def execute(self, query, args=()):
-        self.cursor = self.connection.execute(query, args)
-        return self
+        """For direct execution"""
+        cur = self.cursor()
+        cur.execute(query, args)
+        return cur
     
-    @property
-    def lastrowid(self):
-        return self.cursor.lastrowid
-        
-    def fetchone(self):
-        return self.cursor.fetchone()
-    
-    def fetchall(self):
-        return self.cursor.fetchall()
+    def commit(self):
+        self.connection.commit()
     
     def close(self):
-        pass
-    
-    def __enter__(self):
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None:
-            self.connection.commit()
+        self.connection.close()
 
 def get_db():
     db = getattr(g, "_database", None)
     if db is None:
-        if USE_MYSQL:
-            conn = pymysql.connect(
-                host=DB_HOST,
-                port=DB_PORT,
-                user=DB_USER,
-                password=DB_PASSWORD,
-                database=DB_NAME,
-                cursorclass=pymysql.cursors.DictCursor,
-                autocommit=False
-            )
-            db = g._database = DatabaseWrapper(conn, is_mysql=True)
-        else:
-            import sqlite3
-            conn = sqlite3.connect(DATABASE)
-            conn.row_factory = sqlite3.Row
-            db = g._database = DatabaseWrapper(conn, is_mysql=False)
+        conn = pymysql.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=False
+        )
+        db = g._database = DatabaseWrapper(conn)
     return db
 
 def query_db(query, args=(), one=False):
@@ -175,7 +131,6 @@ def close_connection(exception):
         db.close()
 
 def init_db():
-    if USE_MYSQL:
         conn = pymysql.connect(
             host=DB_HOST,
             port=DB_PORT,
