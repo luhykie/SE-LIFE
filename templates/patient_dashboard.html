@@ -54,12 +54,13 @@
 
     <!-- Quick Actions -->
     <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-2">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center justify-center space-x-2">
             <i class="bi bi-lightning-fill text-yellow-500"></i>
             <span>Quick Actions</span>
         </h2>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="flex justify-center">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 max-w-7xl">
             <!-- View Patient Records -->
             <a href="{{ url_for('patients') }}" 
                class="group bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl p-6 transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
@@ -119,6 +120,7 @@
                     <p class="text-sm text-gray-600">Review system logs</p>
                 </div>
             </a>
+        </div>
         </div>
     </div>
 </div>

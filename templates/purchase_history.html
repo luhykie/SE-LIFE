@@ -36,6 +36,8 @@
                     <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Total Amount</th>
                     <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Status</th>
                     <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Order Date</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Pickup Date</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Message</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -65,6 +67,22 @@
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 text-gray-700 text-sm">{{ order_data.order.purchased_at.strftime('%Y-%m-%d %H:%M') if order_data.order.purchased_at else 'N/A' }}</td>
+                    <td class="px-6 py-4 text-gray-700 text-sm">
+                        {% if order_data.order.pickup_date %}
+                            <span class="font-semibold text-green-600">{{ order_data.order.pickup_date }}</span>
+                        {% else %}
+                            <span class="text-gray-400">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if order_data.order.admin_message %}
+                            <div class="text-sm text-gray-700 bg-blue-50 border border-blue-200 rounded-lg p-2 max-w-xs">
+                                <i class="bi bi-chat-dots text-blue-600"></i> {{ order_data.order.admin_message }}
+                            </div>
+                        {% else %}
+                            <span class="text-gray-400">—</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -1424,6 +1424,8 @@ def update_request_status(request_id):
 def update_order_status(order_id):
     """Approve or reject a purchase order."""
     status = request.form.get("status")
+    pickup_date = request.form.get("pickup_date")
+    admin_message = request.form.get("admin_message")
     
     if status not in ["Approved", "Rejected"]:
         return redirect(url_for("admin_orders"))
@@ -1431,11 +1433,20 @@ def update_order_status(order_id):
     db = get_db()
     c = db.cursor()
     
-    c.execute("""
-        UPDATE purchase_orders
-        SET status = ?
-        WHERE id = ?
-    """, (status, order_id))
+    # Build the update query based on what data is provided
+    if status == "Approved":
+        c.execute("""
+            UPDATE purchase_orders
+            SET status = ?, pickup_date = ?, admin_message = ?
+            WHERE id = ?
+        """, (status, pickup_date if pickup_date else None, admin_message if admin_message else None, order_id))
+    else:
+        # For rejected orders, just update the status
+        c.execute("""
+            UPDATE purchase_orders
+            SET status = ?
+            WHERE id = ?
+        """, (status, order_id))
     
     db.commit()
     return redirect(url_for("admin_orders"))
@@ -1467,7 +1478,7 @@ def admin_orders():
             "order_items": [dict(item) for item in order_items]
         })
     
-    return render_template("admin_orders.html", orders=orders_with_items)
+    return render_template("admin_orders.html", orders=orders_with_items, datetime=datetime)
 
 @app.route("/admin_marketplace")
 @login_required
