@@ -131,13 +131,16 @@
                     <td class="px-6 py-4 text-gray-700">{{ patient.created_at }}</td>
                     <td class="px-6 py-4">
                         <div class="flex gap-2">
-                            <a href="{{ url_for('view_patient', id=patient.id) }}" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-all text-sm font-semibold">
+                            <a href="{{ url_for('view_patient', id=patient.id) }}" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-all text-sm font-semibold" title="View">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            <a href="{{ url_for('edit_patient', id=patient.id) }}" class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-all text-sm font-semibold">
+                            <a href="{{ url_for('edit_patient', id=patient.id) }}" class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-all text-sm font-semibold" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <button onclick="openDeleteModal({{ patient.id }}, '{{ patient.first_name }} {{ patient.last_name }}')" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-all text-sm font-semibold">
+                            <a href="{{ url_for('admin_reset_patient_password', id=patient.id) }}" class="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-all text-sm font-semibold" title="Reset Password">
+                                <i class="bi bi-shield-lock"></i>
+                            </a>
+                            <button onclick="openDeleteModal({{ patient.id }}, '{{ patient.first_name }} {{ patient.last_name }}')" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-all text-sm font-semibold" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>

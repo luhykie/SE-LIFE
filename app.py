@@ -206,8 +206,10 @@ def init_db():
                 contact VARCHAR(50),
                 address TEXT,
                 notes TEXT,
+                password VARCHAR(255),
                 action VARCHAR(50),
-                deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                permanently_deleted BOOLEAN DEFAULT FALSE
             )
         """)
     else:
@@ -223,8 +225,10 @@ def init_db():
                 contact TEXT,
                 address TEXT,
                 notes TEXT,
+                password TEXT,
                 action TEXT,
-                deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                permanently_deleted INTEGER DEFAULT 0
             )
         """)
     
@@ -741,6 +745,16 @@ def patients():
 def add_patient():
     if request.method == "POST":
         data = request.form
+        password = data.get("password", "")
+        confirm_password = data.get("confirm_password", "")
+        
+        # Validate passwords match
+        if password != confirm_password:
+            return render_template("add_patient.html", error="Passwords do not match!")
+        
+        if not password:
+            return render_template("add_patient.html", error="Password is required!")
+        
         db = get_db()
         c = db.cursor()
         c.execute("""
@@ -751,6 +765,11 @@ def add_patient():
               data["sex"], data["contact"], data.get("address"), data.get("notes")))
         # Get the new patient id
         patient_id = c.lastrowid
+        
+        # Create patient account with password
+        username = str(patient_id)
+        c.execute("INSERT INTO patient_accounts (patient_id, username, password) VALUES (?, ?, ?)",
+                  (patient_id, username, password))
 
         # Insert associated health record if health fields provided
         blood_type = data.get("blood_type")
@@ -811,6 +830,44 @@ def edit_patient(id):
 
     return render_template("edit_patient.html", patient=patient, health_record=health)
 
+@app.route("/reset_password/<int:id>", methods=["GET", "POST"])
+@login_required # SECURED
+def admin_reset_patient_password(id):
+    """Allows admin to reset a patient's password."""
+    db = get_db()
+    c = db.cursor()
+    patient = c.execute("SELECT * FROM patients WHERE id = ?", (id,)).fetchone()
+
+    if not patient:
+        return "Patient not found", 404
+    
+    if request.method == "POST":
+        new_password = request.form.get("new_password")
+        confirm_password = request.form.get("confirm_password")
+        
+        if new_password != confirm_password:
+            return render_template("admin_reset_password.html", patient=patient, error="Passwords do not match!")
+        
+        if not new_password:
+            return render_template("admin_reset_password.html", patient=patient, error="Password cannot be empty!")
+        
+        # Check if patient account exists
+        account = c.execute("SELECT * FROM patient_accounts WHERE patient_id = ?", (id,)).fetchone()
+        
+        if account:
+            # Update existing password
+            c.execute("UPDATE patient_accounts SET password = ? WHERE patient_id = ?", (new_password, id))
+        else:
+            # Create new account
+            username = str(id)
+            c.execute("INSERT INTO patient_accounts (patient_id, username, password) VALUES (?, ?, ?)",
+                     (id, username, new_password))
+        
+        db.commit()
+        return render_template("admin_reset_password.html", patient=patient, success="Password reset successfully!")
+    
+    return render_template("admin_reset_password.html", patient=patient)
+
 @app.route("/remove/<int:id>", methods=["POST"])
 @login_required # SECURED
 def remove_patient(id):
@@ -819,12 +876,16 @@ def remove_patient(id):
     patient = c.execute("SELECT * FROM patients WHERE id = ?", (id,)).fetchone()
     
     if patient:
+        # Get the patient's password from patient_accounts
+        account = c.execute("SELECT password FROM patient_accounts WHERE patient_id = ?", (id,)).fetchone()
+        password = account["password"] if account else None
+        
         c.execute("""
             INSERT INTO logs 
-            (id, last_name, first_name, middle_name, suffix, dob, sex, contact, address, notes, action) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, last_name, first_name, middle_name, suffix, dob, sex, contact, address, notes, password, action) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (patient["id"], patient["last_name"], patient["first_name"], patient["middle_name"], patient["suffix"],
-              patient["dob"], patient["sex"], patient["contact"], patient["address"], patient["notes"], "DELETED"))
+              patient["dob"], patient["sex"], patient["contact"], patient["address"], patient["notes"], password, "DELETED"))
         c.execute("DELETE FROM patients WHERE id = ?", (id,))
         db.commit()
 
@@ -842,12 +903,16 @@ def remove_multiple():
             for pid in ids_input:
                 patient = c.execute("SELECT * FROM patients WHERE id = ?", (pid,)).fetchone()
                 if patient:
+                    # Get the patient's password from patient_accounts
+                    account = c.execute("SELECT password FROM patient_accounts WHERE patient_id = ?", (pid,)).fetchone()
+                    password = account["password"] if account else None
+                    
                     c.execute("""
                         INSERT INTO logs 
-                        (id, last_name, first_name, middle_name, suffix, dob, sex, contact, address, notes, action) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, last_name, first_name, middle_name, suffix, dob, sex, contact, address, notes, password, action) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (patient["id"], patient["last_name"], patient["first_name"], patient["middle_name"], patient["suffix"],
-                          patient["dob"], patient["sex"], patient["contact"], patient["address"], patient["notes"], "DELETED"))
+                          patient["dob"], patient["sex"], patient["contact"], patient["address"], patient["notes"], password, "DELETED"))
 
             c.execute(f"DELETE FROM patients WHERE id IN ({','.join(['?']*len(ids_input))})", ids_input)
             db.commit()
@@ -904,9 +969,57 @@ def view_patient(id):
 def logs():
     db = get_db()
     c = db.cursor()
-    c.execute("SELECT * FROM logs ORDER BY deleted_at DESC")
+    c.execute("SELECT * FROM logs WHERE permanently_deleted = 0 OR permanently_deleted IS NULL ORDER BY deleted_at DESC")
     logs = c.fetchall()
     return render_template("logs.html", logs=logs)
+
+@app.route("/logs/undo/<int:log_id>", methods=["POST"])
+@login_required # SECURED
+def undo_deletion(log_id):
+    """Restore a patient from the deleted logs"""
+    db = get_db()
+    c = db.cursor()
+    
+    # Get the log entry
+    log = c.execute("SELECT * FROM logs WHERE log_id = ?", (log_id,)).fetchone()
+    
+    if log:
+        # Check if patient already exists
+        existing = c.execute("SELECT * FROM patients WHERE id = ?", (log["id"],)).fetchone()
+        
+        if not existing:
+            # Restore the patient
+            c.execute("""
+                INSERT INTO patients (id, last_name, first_name, middle_name, suffix, dob, sex, contact, address, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (log["id"], log["last_name"], log["first_name"], log["middle_name"], log["suffix"],
+                  log["dob"], log["sex"], log["contact"], log["address"], log["notes"]))
+            
+            # Restore the patient account with password
+            existing_account = c.execute("SELECT * FROM patient_accounts WHERE patient_id = ?", (log["id"],)).fetchone()
+            if not existing_account and log.get("password"):
+                username = str(log["id"])
+                c.execute("INSERT INTO patient_accounts (patient_id, username, password) VALUES (?, ?, ?)",
+                         (log["id"], username, log["password"]))
+        
+        # Remove from logs
+        c.execute("DELETE FROM logs WHERE log_id = ?", (log_id,))
+        db.commit()
+    
+    return redirect(url_for("logs"))
+
+@app.route("/logs/permanent_delete/<int:log_id>", methods=["POST"])
+@login_required # SECURED
+def permanent_delete(log_id):
+    """Permanently delete a log entry (mark as permanently deleted)"""
+    db = get_db()
+    c = db.cursor()
+    
+    # Mark as permanently deleted
+    c.execute("UPDATE logs SET permanently_deleted = 1 WHERE log_id = ?", (log_id,))
+    db.commit()
+    
+    return redirect(url_for("logs"))
 
 # -----------------------------
 # Patient Portal Routes (Secured to self)
@@ -975,15 +1088,49 @@ def patient_edit_profile():
 
     if request.method == "POST":
         data = request.form
-        # We use the SECURED patient_id from the session, not the form
-        c.execute("""
-            UPDATE patients
-            SET last_name = ?, first_name = ?, middle_name = ?, suffix = ?, dob = ?, sex = ?, contact = ?, address = ?, notes = ?
-            WHERE id = ?
-        """, (data["last_name"], data["first_name"], data.get("middle_name"), data.get("suffix"), data["dob"], 
-              patient["sex"], data["contact"], data.get("address"), patient["notes"], patient_id)) # Note: Sex and Notes are read-only for patient
-        db.commit()
-        return redirect(url_for("patient_profile"))
+        
+        # Handle password change if provided
+        current_password = data.get("current_password", "").strip()
+        new_password = data.get("new_password", "").strip()
+        confirm_password = data.get("confirm_password", "").strip()
+        
+        error = None
+        success = None
+        
+        # If any password field is filled, validate and update password
+        if current_password or new_password or confirm_password:
+            account = c.execute("SELECT * FROM patient_accounts WHERE patient_id = ?", (patient_id,)).fetchone()
+            
+            if not current_password:
+                error = "Current password is required to change password!"
+            elif not account or account["password"] != current_password:
+                error = "Current password is incorrect!"
+            elif not new_password:
+                error = "New password cannot be empty!"
+            elif new_password != confirm_password:
+                error = "New passwords do not match!"
+            else:
+                # Update password
+                c.execute("UPDATE patient_accounts SET password = ? WHERE patient_id = ?", (new_password, patient_id))
+                success = "Password changed successfully!"
+        
+        if not error:
+            # We use the SECURED patient_id from the session, not the form
+            c.execute("""
+                UPDATE patients
+                SET last_name = ?, first_name = ?, middle_name = ?, suffix = ?, dob = ?, sex = ?, contact = ?, address = ?, notes = ?
+                WHERE id = ?
+            """, (data["last_name"], data["first_name"], data.get("middle_name"), data.get("suffix"), data["dob"], 
+                  patient["sex"], data["contact"], data.get("address"), patient["notes"], patient_id)) # Note: Sex and Notes are read-only for patient
+            db.commit()
+            
+            if success:
+                # Re-fetch patient data and show success message
+                patient = c.execute("SELECT * FROM patients WHERE id = ?", (patient_id,)).fetchone()
+                return render_template("patient_edit_profile.html", patient=patient, success=success)
+            return redirect(url_for("patient_profile"))
+        else:
+            return render_template("patient_edit_profile.html", patient=patient, error=error)
 
     # Render the patient-specific edit template
     return render_template("patient_edit_profile.html", patient=patient)
