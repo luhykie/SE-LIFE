@@ -35,11 +35,27 @@ def login_required(f):
 
 def calculate_age(dob_str):
     """Calculates age accurately from a DOB string (YYYY-MM-DD)."""
+    if not dob_str:
+        return None
     try:
-        dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
+        # Handle if dob_str is already a date object
+        if isinstance(dob_str, date):
+            dob = dob_str
+        else:
+            # Try multiple date formats
+            dob_str = str(dob_str).strip()
+            for fmt in ["%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%m/%d/%Y"]:
+                try:
+                    dob = datetime.strptime(dob_str, fmt).date()
+                    break
+                except ValueError:
+                    continue
+            else:
+                return None
+        
         today = date.today()
         return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, AttributeError):
         return None
 
 # -----------------------------
@@ -700,9 +716,16 @@ def patients():
     else:
         patients_data = sorted(patients_data, key=lambda x: x["id"])
 
+    # Add age to each patient
+    patients_with_age = []
+    for patient in patients_data:
+        patient_dict = dict(patient)
+        patient_dict["age"] = calculate_age(patient["dob"])
+        patients_with_age.append(patient_dict)
+
     return render_template(
         "patients.html",
-        patients=patients_data,
+        patients=patients_with_age,
         gender_filter=gender_filter,
         sort_by=sort_by,
         age_input=age_input,
