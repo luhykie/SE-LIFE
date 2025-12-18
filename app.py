@@ -383,7 +383,7 @@ def init_db():
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 patient_id INT NOT NULL,
                 total_amount DECIMAL(10, 2) NOT NULL,
-                status VARCHAR(50) DEFAULT 'Completed',
+                status VARCHAR(50) DEFAULT 'Pending',
                 purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
             )
@@ -394,7 +394,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 patient_id INTEGER NOT NULL,
                 total_amount REAL NOT NULL,
-                status TEXT DEFAULT 'Completed',
+                status TEXT DEFAULT 'Pending',
                 purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (patient_id) REFERENCES patients(id)
             )
@@ -513,13 +513,13 @@ def dashboard():
     # Get pending service requests count
     pending_requests = c.execute("SELECT COUNT(*) as count FROM service_requests WHERE status = 'Pending'").fetchone()["count"]
     
-    # For now, new orders is 0 (can be implemented later with marketplace orders)
-    new_orders = 0
+    # Get pending purchase orders count
+    pending_orders = c.execute("SELECT COUNT(*) as count FROM purchase_orders WHERE status = 'Pending'").fetchone()["count"]
     
     stats = {
         'total_patients': total_patients,
         'pending_requests': pending_requests,
-        'new_orders': new_orders
+        'new_orders': pending_orders
     }
     
     return render_template("patient_dashboard.html", stats=stats)
@@ -1184,7 +1184,7 @@ def checkout():
     # Create purchase order
     c.execute("""
         INSERT INTO purchase_orders (patient_id, total_amount, status)
-        VALUES (?, ?, 'Completed')
+        VALUES (?, ?, 'Pending')
     """, (patient_id, total_amount))
     order_id = c.lastrowid
     
@@ -1419,6 +1419,27 @@ def update_request_status(request_id):
     db.commit()
     return redirect(url_for("admin_requests"))
 
+@app.route("/update_order_status/<int:order_id>", methods=["POST"])
+@login_required
+def update_order_status(order_id):
+    """Approve or reject a purchase order."""
+    status = request.form.get("status")
+    
+    if status not in ["Approved", "Rejected"]:
+        return redirect(url_for("admin_orders"))
+    
+    db = get_db()
+    c = db.cursor()
+    
+    c.execute("""
+        UPDATE purchase_orders
+        SET status = ?
+        WHERE id = ?
+    """, (status, order_id))
+    
+    db.commit()
+    return redirect(url_for("admin_orders"))
+
 @app.route("/admin_orders")
 @login_required
 def admin_orders():
@@ -1447,6 +1468,83 @@ def admin_orders():
         })
     
     return render_template("admin_orders.html", orders=orders_with_items)
+
+@app.route("/admin_marketplace")
+@login_required
+def admin_marketplace():
+    """Admin marketplace inventory management."""
+    db = get_db()
+    c = db.cursor()
+    
+    # Get all marketplace items
+    items = c.execute("SELECT * FROM marketplace_items ORDER BY id DESC").fetchall()
+    
+    return render_template("admin_marketplace.html", items=items)
+
+@app.route("/add_marketplace_item", methods=["GET", "POST"])
+@login_required
+def add_marketplace_item():
+    """Add new marketplace item."""
+    if request.method == "POST":
+        name = request.form.get("name")
+        description = request.form.get("description")
+        stock = request.form.get("stock")
+        price = request.form.get("price")
+        
+        db = get_db()
+        c = db.cursor()
+        
+        c.execute("""
+            INSERT INTO marketplace_items (name, description, stock, price)
+            VALUES (?, ?, ?, ?)
+        """, (name, description, stock, price))
+        
+        db.commit()
+        return redirect(url_for("admin_marketplace"))
+    
+    return render_template("add_marketplace_item.html")
+
+@app.route("/edit_marketplace_item/<int:item_id>", methods=["GET", "POST"])
+@login_required
+def edit_marketplace_item(item_id):
+    """Edit marketplace item."""
+    db = get_db()
+    c = db.cursor()
+    
+    if request.method == "POST":
+        name = request.form.get("name")
+        description = request.form.get("description")
+        stock = request.form.get("stock")
+        price = request.form.get("price")
+        
+        c.execute("""
+            UPDATE marketplace_items
+            SET name = ?, description = ?, stock = ?, price = ?
+            WHERE id = ?
+        """, (name, description, stock, price, item_id))
+        
+        db.commit()
+        return redirect(url_for("admin_marketplace"))
+    
+    # Get item details
+    item = c.execute("SELECT * FROM marketplace_items WHERE id = ?", (item_id,)).fetchone()
+    
+    if not item:
+        return redirect(url_for("admin_marketplace"))
+    
+    return render_template("edit_marketplace_item.html", item=item)
+
+@app.route("/delete_marketplace_item/<int:item_id>", methods=["POST"])
+@login_required
+def delete_marketplace_item(item_id):
+    """Delete marketplace item."""
+    db = get_db()
+    c = db.cursor()
+    
+    c.execute("DELETE FROM marketplace_items WHERE id = ?", (item_id,))
+    db.commit()
+    
+    return redirect(url_for("admin_marketplace"))
 
 
 if __name__ == "__main__":

@@ -182,7 +182,7 @@ try:
             id INT AUTO_INCREMENT PRIMARY KEY,
             patient_id INT NOT NULL,
             total_amount DECIMAL(10, 2) NOT NULL,
-            status VARCHAR(50) DEFAULT 'Completed',
+            status VARCHAR(50) DEFAULT 'Pending',
             purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
         )
